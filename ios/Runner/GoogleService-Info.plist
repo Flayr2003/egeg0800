@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>287248537835-afnu1vijppfuq887rbr9poi278dvngut.apps.googleusercontent.com</string>
+	<string>287224857835-afnu1vijppfuq887rbr9poi278dvngut.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.287248537835-afnu1vijppfuq887rbr9poi278dvngut</string>
+	<string>com.googleusercontent.apps.287224857835-afnu1vijppfuq887rbr9poi278dvngut</string>
 	<key>API_KEY</key>
-	<string>AIzaSyCnAJYGCJMKXciLodir1Q8fhg-jAJayr2k</string>
+	<string>AIzaSyAb0AAY0VZqO4yvyEIPGNGb6eFktl3c8hk</string>
 	<key>GCM_SENDER_ID</key>
-	<string>287248537835</string>
+	<string>287224857835</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.retrytech.bubbly</string>
+	<string>com.fistayl.flayr</string>
 	<key>PROJECT_ID</key>
 	<string>shortzz-new</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:287248537835:ios:2d17d8f3840e462fea864e</string>
+	<string>1:287224857835:ios:2d17d8f3840e462fea864e</string>
 </dict>
 </plist>

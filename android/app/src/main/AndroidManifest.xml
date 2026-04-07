@@ -71,7 +71,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="https" />
-                <data android:host="_____ BASE URL ______" />
+                <data android:host="fistayl.com" />
             </intent-filter>
 
             <meta-data
@@ -87,7 +87,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="______ GOOGLE API ________" />
+            android:value="AIzaSyAb0AAY0VZqO4yvyEIPGNGb6eFktl3c8hk" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="shortzz" />
