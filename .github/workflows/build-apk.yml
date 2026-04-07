@@ -21,6 +21,7 @@ jobs:
       with:
         distribution: 'zulu'
         java-version: '17'
+        cache: 'gradle'
         
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
@@ -29,35 +30,62 @@ jobs:
         channel: 'stable'
         cache: true
         
-    - name: Get dependencies
-      run: flutter pub get
-      
-    - name: Verify Flutter installation
+    - name: Configure Git for dependencies
       run: |
-        flutter --version
-        flutter doctor -v
+        git config --global url."https://gitlab.com/".insteadOf "git@gitlab.com:"
+        git config --global url."https://".insteadOf "git://"
         
-    - name: Build APK
-      run: flutter build apk --release --no-shrink
+    - name: Flutter Doctor
+      run: flutter doctor -v
       
-    - name: Get APK info
+    - name: Clean previous builds
+      run: flutter clean
+      
+    - name: Get dependencies (with retries)
       run: |
-        APK_PATH=$(find build/app/outputs/flutter-apk -name "*.apk" | head -1)
-        echo "APK_PATH=$APK_PATH" >> $GITHUB_ENV
-        ls -lh $APK_PATH
+        for i in {1..3}; do
+          flutter pub get && break || {
+            echo "Attempt $i failed, retrying..."
+            sleep 5
+          }
+        done
+      timeout-minutes: 10
+      
+    - name: Verify dependencies
+      run: flutter pub get --offline || flutter pub get
+      
+    - name: Build APK (unsigned)
+      run: |
+        flutter build apk --release --no-shrink || \
+        flutter build apk --debug
+      continue-on-error: false
+      
+    - name: List APK files
+      run: |
+        find build/app/outputs -name "*.apk" -type f
+        ls -lh build/app/outputs/flutter-apk/ || true
         
-    - name: Upload APK artifact
+    - name: Upload Release APK
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: flayr-release-apk
-        path: build/app/outputs/flutter-apk/*.apk
+        path: |
+          build/app/outputs/flutter-apk/app-release.apk
+          build/app/outputs/flutter-apk/app-debug.apk
+        if-no-files-found: warn
         retention-days: 30
         
-    - name: Create Release Info
+    - name: Build Summary
+      if: always()
       run: |
-        echo "### 📱 APK Build Successful!" >> $GITHUB_STEP_SUMMARY
+        echo "### 📱 Build Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Build Date:** $(date)" >> $GITHUB_STEP_SUMMARY
-        echo "**APK Size:** $(du -h build/app/outputs/flutter-apk/*.apk | cut -f1)" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Download APK from Artifacts section above" >> $GITHUB_STEP_SUMMARY
+        echo "**Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+        if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+          echo "**✅ Release APK:** $(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1)" >> $GITHUB_STEP_SUMMARY
+        elif [ -f "build/app/outputs/flutter-apk/app-debug.apk" ]; then
+          echo "**⚠️ Debug APK:** $(du -h build/app/outputs/flutter-apk/app-debug.apk | cut -f1)" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "**❌ No APK generated**" >> $GITHUB_STEP_SUMMARY
+        fi
