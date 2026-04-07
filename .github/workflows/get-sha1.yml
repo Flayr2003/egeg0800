@@ -1,0 +1,38 @@
+name: Get SHA-1 Certificate
+
+on:
+  workflow_dispatch:
+
+jobs:
+  get-sha1:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+        
+    - name: Generate Debug Keystore
+      run: |
+        keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+        
+    - name: Get SHA-1 and SHA-256
+      run: |
+        echo "### 🔐 Debug Keystore Fingerprints" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        keytool -list -v -keystore debug.keystore -alias androiddebugkey -storepass android -keypass android | grep -A 2 "Certificate fingerprints"
+        keytool -list -v -keystore debug.keystore -alias androiddebugkey -storepass android -keypass android | grep -A 2 "Certificate fingerprints" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**📝 Instructions:**" >> $GITHUB_STEP_SUMMARY
+        echo "1. Copy the SHA-1 fingerprint above" >> $GITHUB_STEP_SUMMARY
+        echo "2. Go to Firebase Console > Project Settings" >> $GITHUB_STEP_SUMMARY
+        echo "3. Add this SHA-1 to your Android app" >> $GITHUB_STEP_SUMMARY
+        echo "4. Download new google-services.json" >> $GITHUB_STEP_SUMMARY
+        echo "5. Replace the file in android/app/google-services.json" >> $GITHUB_STEP_SUMMARY
