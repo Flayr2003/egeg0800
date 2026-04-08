@@ -22,7 +22,7 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.put(AuthScreenController());
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true, // Enabled to prevent overflow when keyboard appears
       body: Container(
         height: Get.height,
         decoration: const ShapeDecoration(
@@ -33,144 +33,143 @@ class LoginScreen extends StatelessWidget {
         child: Stack(
           children: [
             const ThemeBlurBg(),
-            SingleChildScrollView(
-              child: SafeArea(
-                bottom: false,
-                child: Column(
-                  children: [
-                    Padding(
-                      padding:
-                          const EdgeInsets.only(left: 20, right: 20, top: 30),
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 30.0),
-                            child: RichText(
-                                textAlign: TextAlign.center,
-                                text: TextSpan(
-                                  text: LKey.signIn.tr.toUpperCase(),
-                                  style: TextStyleCustom.unboundedBlack900(
-                                    fontSize: 25,
-                                    color: whitePure(context),
-                                  ).copyWith(letterSpacing: -.2),
-                                  children: [
-                                    TextSpan(
-                                        text: '\n${LKey.toContinue.tr}'
-                                            .toUpperCase(),
-                                        style:
-                                            TextStyleCustom.unboundedBlack900(
-                                                fontSize: 25,
-                                                color: whitePure(context)
-                                                    .withValues(alpha: .5),
-                                                opacity: .5))
-                                  ],
-                                )),
-                          ),
-                          const SizedBox(height: 50 * 1.5),
-                          LoginSheetTextField(
-                            hintText: LKey.enterYourEmail.tr,
-                            controller: controller.emailController,
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 14),
-                          LoginSheetTextField(
-                            isPasswordField: true,
-                            hintText: LKey.enterPassword.tr,
-                            controller: controller.passwordController,
-                          ),
-                          Align(
-                            alignment: AlignmentDirectional.centerEnd,
-                            child: InkWell(
-                              onTap: () {
-                                Get.bottomSheet(const ForgetPasswordSheet(),
-                                        isScrollControlled: true)
-                                    .then((value) => controller
-                                        .forgetEmailController
-                                        .clear());
-                              },
-                              child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 14.0),
-                                  child: Text(LKey.forgetPassword.tr,
-                                      style: TextStyleCustom.outFitRegular400(
-                                          fontSize: 16,
-                                          color: whitePure(context)))),
-                            ),
-                          ),
-                          TextButtonCustom(
-                              onTap: controller.onLogin,
-                              title: LKey.logIn.tr,
-                              btnHeight: 50,
-                              horizontalMargin: 0)
-                        ],
+            SafeArea(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 30),
+                      RichText(
+                          textAlign: TextAlign.center,
+                          text: TextSpan(
+                            text: LKey.signIn.tr.toUpperCase(),
+                            style: TextStyleCustom.unboundedBlack900(
+                              fontSize: 25,
+                              color: whitePure(context),
+                            ).copyWith(letterSpacing: -.2),
+                            children: [
+                              TextSpan(
+                                  text: '\n${LKey.toContinue.tr}'
+                                      .toUpperCase(),
+                                  style:
+                                      TextStyleCustom.unboundedBlack900(
+                                          fontSize: 25,
+                                          color: whitePure(context)
+                                              .withValues(alpha: .5),
+                                          opacity: .5))
+                            ],
+                          )),
+                      const SizedBox(height: 75),
+                      LoginSheetTextField(
+                        hintText: LKey.enterYourEmail.tr,
+                        controller: controller.emailController,
+                        keyboardType: TextInputType.emailAddress,
                       ),
-                    ),
-                    InkWell(
-                      onTap: () {
-                        controller.fullNameController.clear();
-                        controller.emailController.clear();
-                        controller.passwordController.clear();
-                        controller.confirmPassController.clear();
-                        Get.to(() => const RegistrationScreen());
-                      },
-                      child: Container(
-                        height: 48,
-                        margin: const EdgeInsets.symmetric(vertical: 25),
-                        alignment: Alignment.center,
-                        color: whitePure(context).withValues(alpha: .2),
-                        child: Text(
-                          LKey.createAccountHere.tr,
-                          style: TextStyleCustom.outFitRegular400(
-                              color: whitePure(context), fontSize: 16),
+                      const SizedBox(height: 14),
+                      LoginSheetTextField(
+                        isPasswordField: true,
+                        hintText: LKey.enterPassword.tr,
+                        controller: controller.passwordController,
+                      ),
+                      Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: InkWell(
+                          onTap: () {
+                            Get.bottomSheet(const ForgetPasswordSheet(),
+                                    isScrollControlled: true)
+                                .then((value) => controller
+                                    .forgetEmailController
+                                    .clear());
+                          },
+                          child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 14.0),
+                              child: Text(LKey.forgetPassword.tr,
+                                  style: TextStyleCustom.outFitRegular400(
+                                      fontSize: 16,
+                                      color: whitePure(context)))),
                         ),
                       ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CustomDivider(
-                          color: whitePure(context),
-                          height: .5,
-                          width: 100,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                      TextButtonCustom(
+                          onTap: controller.onLogin,
+                          title: LKey.logIn.tr,
+                          btnHeight: 50,
+                          horizontalMargin: 0),
+                      InkWell(
+                        onTap: () {
+                          controller.fullNameController.clear();
+                          controller.emailController.clear();
+                          controller.passwordController.clear();
+                          controller.confirmPassController.clear();
+                          Get.to(() => const RegistrationScreen());
+                        },
+                        child: Container(
+                          height: 48,
+                          margin: const EdgeInsets.symmetric(vertical: 25),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: whitePure(context).withValues(alpha: .2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                           child: Text(
-                            LKey.continueWith.tr,
+                            LKey.createAccountHere.tr,
                             style: TextStyleCustom.outFitRegular400(
-                                fontSize: 16, color: whitePure(context)),
+                                color: whitePure(context), fontSize: 16),
                           ),
                         ),
-                        CustomDivider(
-                          color: whitePure(context),
-                          height: .5,
-                          width: 100,
-                        ),
-                      ],
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 25.0),
-                      child: Row(
+                      ),
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          if (Platform.isIOS)
-                            SocialBtn(
-                              onTap: controller.onAppleTap,
-                              icon: AssetRes.icApple,
+                          Expanded(
+                            child: CustomDivider(
+                              color: whitePure(context),
+                              height: .5,
                             ),
-                          if (Platform.isIOS) const SizedBox(width: 10),
-                          SocialBtn(
-                              onTap: controller.onGoogleTap,
-                              icon: AssetRes.icGoogle),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                            child: Text(
+                              LKey.continueWith.tr,
+                              style: TextStyleCustom.outFitRegular400(
+                                  fontSize: 16, color: whitePure(context)),
+                            ),
+                          ),
+                          Expanded(
+                            child: CustomDivider(
+                              color: whitePure(context),
+                              height: .5,
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                    PrivacyPolicyText(
-                      boldTextColor: whitePure(context),
-                      regularTextColor:
-                          whitePure(context).withValues(alpha: .8),
-                    )
-                  ],
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 25.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (Platform.isIOS)
+                              SocialBtn(
+                                onTap: controller.onAppleTap,
+                                icon: AssetRes.icApple,
+                              ),
+                            if (Platform.isIOS) const SizedBox(width: 10),
+                            SocialBtn(
+                                onTap: controller.onGoogleTap,
+                                icon: AssetRes.icGoogle),
+                          ],
+                        ),
+                      ),
+                      PrivacyPolicyText(
+                        boldTextColor: whitePure(context),
+                        regularTextColor:
+                            whitePure(context).withValues(alpha: .8),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -224,8 +223,7 @@ class _LoginSheetTextFieldState extends State<LoginSheetTextField> {
           hintText: widget.hintText,
           hintStyle: TextStyleCustom.outFitRegular400(
               color: whitePure(context), fontSize: 16),
-          contentPadding: EdgeInsets.only(
-              left: 10, right: 10, top: widget.isPasswordField ? 2 : 0),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
           suffixIconConstraints: const BoxConstraints(),
           suffixIcon: widget.isPasswordField
               ? InkWell(
@@ -235,12 +233,15 @@ class _LoginSheetTextFieldState extends State<LoginSheetTextField> {
                   },
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 250),
-                    child: Image.asset(
-                        isHide ? AssetRes.icEye : AssetRes.icHideEye,
-                        height: 24,
-                        width: 35,
-                        color: whitePure(context),
-                        key: UniqueKey()),
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Image.asset(
+                          isHide ? AssetRes.icEye : AssetRes.icHideEye,
+                          height: 24,
+                          width: 24,
+                          color: whitePure(context),
+                          key: UniqueKey()),
+                    ),
                   ),
                 )
               : null,

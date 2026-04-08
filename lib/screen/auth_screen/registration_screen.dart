@@ -19,8 +19,8 @@ class RegistrationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<AuthScreenController>();
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
-        bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -30,6 +30,7 @@ class RegistrationScreen extends StatelessWidget {
             const SizedBox(height: 10),
             Expanded(
                 child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
               dragStartBehavior: DragStartBehavior.down,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,21 +73,26 @@ class RegistrationScreen extends StatelessWidget {
                     title: LKey.reTypePassword.tr,
                     isPasswordField: true,
                   ),
+                  const SizedBox(height: 20),
+                  TextButtonCustom(
+                    onTap: controller.onCreateAccount,
+                    title: LKey.createAccount.tr,
+                    backgroundColor: textDarkGrey(context),
+                    horizontalMargin: 20,
+                    titleColor: whitePure(context),
+                  ),
+                  const SizedBox(height: 20),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: PrivacyPolicyText(),
+                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
             )),
-            TextButtonCustom(
-                onTap: controller.onCreateAccount,
-                title: LKey.createAccount.tr,
-                backgroundColor: textDarkGrey(context),
-                horizontalMargin: 20,
-                titleColor: whitePure(context)),
-            SizedBox(height: AppBar().preferredSize.height / 1.2),
-            const SafeArea(top: false, maintainBottomViewPadding: true, child: PrivacyPolicyText()),
           ],
         ),
       ),
     );
   }
 }
-

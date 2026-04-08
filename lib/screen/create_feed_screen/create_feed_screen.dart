@@ -38,46 +38,54 @@ class CreateFeedScreen extends StatelessWidget {
         Get.put(CreateFeedScreenController(onAddPost, createType, content.obs));
 
     return Scaffold(
-      body: Column(
-        children: [
-          CustomAppBar(title: LKey.createFeed.tr),
-          Expanded(
-            child: GestureDetector(
-              onTap: () =>
-                  controller.commentHelper.detectableTextFocusNode.unfocus(),
-              child: Stack(
-                children: [
-                  SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        ReelPreviewCard(controller: controller),
-                        CreateFeedLocationBar(controller: controller),
-                        const FeedTextFieldView(),
-                        UrlMetaDataCard(controller: controller),
-                        if (createType == CreateFeedType.feed)
-                          mediaSelectionView(controller),
-                        const SizedBox(height: 5),
-                        Obx(
-                          () => switch (controller.feedPostType.value) {
-                            FeedPostType.text => const SizedBox(),
-                            FeedPostType.image => FeedImageView(
-                                files: controller.images,
-                                controller: controller),
-                            FeedPostType.video =>
-                              FeedVideoView(controller: controller),
-                          },
-                        ),
-                        const FeedCommentToggle(),
-                        _uploadButton(controller, context),
-                      ],
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: Column(
+          children: [
+            CustomAppBar(title: LKey.createFeed.tr),
+            Expanded(
+              child: GestureDetector(
+                onTap: () =>
+                    controller.commentHelper.detectableTextFocusNode.unfocus(),
+                child: Stack(
+                  children: [
+                    SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        children: [
+                          ReelPreviewCard(controller: controller),
+                          CreateFeedLocationBar(controller: controller),
+                          const FeedTextFieldView(),
+                          UrlMetaDataCard(controller: controller),
+                          if (createType == CreateFeedType.feed)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                              child: mediaSelectionView(controller),
+                            ),
+                          const SizedBox(height: 5),
+                          Obx(
+                            () => switch (controller.feedPostType.value) {
+                              FeedPostType.text => const SizedBox(),
+                              FeedPostType.image => FeedImageView(
+                                  files: controller.images,
+                                  controller: controller),
+                              FeedPostType.video =>
+                                FeedVideoView(controller: controller),
+                            },
+                          ),
+                          const FeedCommentToggle(),
+                          _uploadButton(controller, context),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
                     ),
-                  ),
-                  Obx(() => mentionOrHashtagView(controller, context))
-                ],
+                    Obx(() => mentionOrHashtagView(controller, context))
+                  ],
+                ),
               ),
-            ),
-          )
-        ],
+            )
+          ],
+        ),
       ),
     );
   }
@@ -91,7 +99,7 @@ class CreateFeedScreen extends StatelessWidget {
                   BuildImageContainer(
                       image: AssetRes.icImage,
                       onTap: () => controller.onMediaTap(FeedPostType.image)),
-                  const SizedBox(width: 5),
+                  const SizedBox(width: 10),
                   BuildImageContainer(
                       image: AssetRes.icVideo,
                       onTap: () => controller.onMediaTap(FeedPostType.video)),
@@ -114,8 +122,7 @@ class CreateFeedScreen extends StatelessWidget {
             textDarkGrey(context).withValues(alpha: isEmpty.value ? .5 : 1),
         titleColor:
             whitePure(context).withValues(alpha: isEmpty.value ? .5 : 1),
-        margin: EdgeInsets.symmetric(
-            vertical: AppBar().preferredSize.height, horizontal: 20),
+        margin: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
       );
     });
   }
@@ -186,7 +193,10 @@ class BuildImageContainer extends StatelessWidget {
         onTap: onTap,
         child: Container(
           height: 59,
-          decoration: BoxDecoration(color: bgLightGrey(context)),
+          decoration: BoxDecoration(
+            color: bgLightGrey(context),
+            borderRadius: BorderRadius.circular(10),
+          ),
           child: Center(
             child: Image.asset(image,
                 color: textDarkGrey(context), height: 29, width: 29),

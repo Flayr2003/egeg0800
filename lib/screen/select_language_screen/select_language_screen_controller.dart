@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flayr/common/controller/base_controller.dart';
 import 'package:flayr/common/manager/ads_manager.dart';
@@ -49,20 +49,42 @@ class SelectLanguageScreenController extends BaseController {
   void initLanguage() {
     List<Language> items =
         SessionManager.instance.getSettings()?.languages ?? [];
+    
+    // Sort languages to keep order consistent
     items.sort((a, b) => (a.title ?? '').compareTo(b.title ?? ''));
+    
+    languages.clear();
     for (Language element in items) {
       if (element.status == 1) {
         languages.add(element);
       }
     }
-    selectedLanguage.value = languages.firstWhere((element) {
-      return element.code == SessionManager.instance.getLang();
-    }) as Language?;
+    
+    // Safely find selected language
+    String currentLang = SessionManager.instance.getLang();
+    selectedLanguage.value = languages.firstWhereOrNull((element) {
+      return element.code == currentLang;
+    });
   }
 
   void onLanguageChange(Language? value) {
+    if (value == null) return;
+    
     selectedLanguage.value = value;
-    SessionManager.instance.setLang(value?.code ?? 'en');
-    RestartWidget.restartApp(Get.context!);
+    String langCode = value.code ?? 'en';
+    
+    // 1. Save language to local storage
+    SessionManager.instance.setLang(langCode);
+    
+    // 2. Update GetX Locale immediately to prevent mixed language UI
+    Get.updateLocale(Locale(langCode));
+    
+    Loggers.info('Language changed to: $langCode');
+
+    // 3. Restart app to ensure all controllers and translations are reloaded from CSV
+    // We use a small delay to allow the storage to persist properly
+    Future.delayed(const Duration(milliseconds: 100), () {
+      RestartWidget.restartApp(Get.context!);
+    });
   }
 }

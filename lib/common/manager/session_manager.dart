@@ -86,7 +86,6 @@ class SessionManager {
       User newUser = User.fromJson(json);
 
       // Log the updated user object and store it
-      // Loggers.success(user.toJson());
       storage.write(SessionKeys.user, newUser);
     }
   }
@@ -127,7 +126,14 @@ class SessionManager {
 
   void setLang(String langCode) {
     storage.write(SessionKeys.lang, langCode);
-    UserService.instance.updateUserDetails(appLanguage: langCode);
+    
+    // Update GetX Locale immediately to ensure UI consistency
+    Get.updateLocale(Locale(langCode));
+    
+    // Sync with server if logged in
+    if (isLogin()) {
+      UserService.instance.updateUserDetails(appLanguage: langCode);
+    }
   }
 
   String getLang() {
@@ -160,7 +166,7 @@ class SessionManager {
   }
 
   void setLogin(bool isLog) {
-    storage.write(SessionKeys.isLogin, true);
+    storage.write(SessionKeys.isLogin, isLog);
   }
 
   bool get shouldOpenEULASheet {

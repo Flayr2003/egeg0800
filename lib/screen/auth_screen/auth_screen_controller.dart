@@ -64,24 +64,30 @@ class AuthScreenController extends BaseController {
     showLoader();
 
     try {
-      // --- FAKE LOGIN OVERRIDE ---
-      // This bypasses Firebase and calls the backend fake login directly
-      Loggers.info('Starting Fake/Bypass login for: $email');
-      final user.User? data = await _registration(
-          identity: email, 
-          loginMethod: LoginMethod.email, 
-          loginVia: LoginVia.logInFakeUser, 
-          password: password
-      );
-      stopLoader();
+      // Authenticate with Firebase first
+      UserCredential? credential = await signInWithEmailAndPassword();
+      if (credential != null && credential.user != null) {
+        Loggers.info('Firebase login successful for: ${credential.user?.email}');
+        
+        // Register/Login with backend using Firebase UID or Email
+        final user.User? data = await _registration(
+            identity: credential.user?.email ?? email, 
+            loginMethod: LoginMethod.email, 
+            loginVia: LoginVia.loginInUser,
+            fullname: credential.user?.displayName
+        );
+        stopLoader();
 
-      if (data != null) {
-        Loggers.success('Bypass login successful');
-        _navigateScreen(data);
+        if (data != null) {
+          Loggers.success('Backend login successful');
+          _navigateScreen(data);
+        } else {
+          Loggers.error('Backend returned null for login');
+          showSnackBar('Server error. Please try again later.');
+        }
       } else {
-        Loggers.error('Backend returned null for bypass login');
+        stopLoader();
       }
-      // --- END FAKE LOGIN OVERRIDE ---
     } catch (e) {
       Loggers.error('Unexpected error in onLogin: $e');
       stopLoader();
@@ -126,32 +132,37 @@ class AuthScreenController extends BaseController {
 
   void onGoogleTap() async {
     showLoader();
-    
-    // --- FAKE GOOGLE LOGIN OVERRIDE ---
-    // Instead of Google Auth, we use a fixed test email to bypass
-    String fakeEmail = "testuser@flayr.com";
-    Loggers.info('Bypassing Google Sign-In with fake email: $fakeEmail');
-    
-    user.User? data;
+    UserCredential? credential;
     try {
-      data = await _registration(
-          identity: fakeEmail,
-          loginMethod: LoginMethod.google,
-          fullname: "Test User",
-          loginVia: LoginVia.loginInUser);
+      credential = await signInWithGoogle();
+      Loggers.info(
+          'GOOGLE EMAIL : ${credential.user?.email} FULLNAME : ${credential.user?.displayName}');
     } catch (e) {
-      Loggers.error('Bypass Registration Error: $e');
+      Loggers.error('Google Sign-In Error: $e');
       stopLoader();
-      showSnackBar('Google Sign-In is currently disabled. Using bypass failed.');
+      showSnackBar('Google Sign-In failed: ${e.toString()}');
       return;
     }
 
+    if (credential.user == null) {
+      stopLoader();
+      return;
+    }
+
+    // Register/Login with backend using REAL Google data
+    user.User? data = await _registration(
+        identity: credential.user?.email ?? '',
+        loginMethod: LoginMethod.google,
+        fullname: credential.user?.displayName ?? credential.user?.email?.split('@')[0],
+        loginVia: LoginVia.loginInUser);
+    
     stopLoader();
     if (data != null) {
-      Loggers.success('Bypass Google login successful');
+      Loggers.success('Google login successful with real data');
       _navigateScreen(data);
+    } else {
+      showSnackBar('Failed to sync with server. Please try again.');
     }
-    // --- END FAKE GOOGLE LOGIN OVERRIDE ---
   }
 
   void onAppleTap() async {

@@ -25,137 +25,153 @@ class SelectLanguageScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller =
         Get.put(SelectLanguageScreenController(languageNavigationType));
+    
     return Scaffold(
       body: Stack(
         children: [
           const ThemeBlurBg(),
           SafeArea(
-            top: false,
             child: Column(
               children: [
-                switch (languageNavigationType) {
-                  LanguageNavigationType.fromStart => SafeArea(
-                      child: Container(
-                        padding:
-                            const EdgeInsets.only(left: 20, right: 20, top: 30),
-                        height: 100,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 70,
-                              height: 70,
-                              padding: const EdgeInsets.all(15),
-                              decoration: ShapeDecoration(
-                                  color:
-                                      whitePure(context).withValues(alpha: .1),
-                                  shape: SmoothRectangleBorder(
-                                    borderRadius:
-                                        SmoothBorderRadius(cornerRadius: 15),
-                                  )),
-                              child: Image.asset(AssetRes.icLanguage),
-                            ),
-                            const SizedBox(width: 18),
-                            Expanded(
-                                child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  LKey.select.tr.toUpperCase(),
-                                  style: TextStyleCustom.unboundedBlack900(
-                                      fontSize: 25, color: whitePure(context)),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                                Text(
-                                  LKey.language.tr.toUpperCase(),
-                                  style: TextStyleCustom.unboundedBlack900(
-                                      fontSize: 25,
-                                      color: whitePure(context),
-                                      opacity: .5),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ],
-                            )),
-                          ],
-                        ),
-                      ),
-                    ),
-                  LanguageNavigationType.fromSetting => CustomAppBar(
-                      title: LKey.languages.tr,
-                      titleStyle: TextStyleCustom.unboundedSemiBold600(
-                          fontSize: 15, color: whitePure(context)),
-                      bgColor: Colors.transparent,
-                      iconColor: whitePure(context)),
-                },
+                _buildHeader(context),
                 Expanded(
-                  child: ListView.builder(
-                      itemCount: controller.languages.length,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 15, vertical: 25),
-                      itemBuilder: (context, index) {
-                        Language language = controller.languages[index];
-                        return Obx(
-                          () {
-                            bool isSelected =
-                                language == controller.selectedLanguage.value;
-                            return GestureDetector(
-                              onTap: () => controller.onLanguageChange(language),
-                              child: Container(
-                                height: 60,
-                                alignment: Alignment.center,
-                                margin: const EdgeInsets.symmetric(vertical: 2),
-                                decoration: ShapeDecoration(
-                                  shape: SmoothRectangleBorder(
-                                    borderRadius: SmoothBorderRadius(cornerRadius: 10, cornerSmoothing: 1),
-                                    side: isSelected
-                                        ? BorderSide(color: whitePure(context))
-                                        : const BorderSide(color: Colors.transparent),
+                  child: Obx(
+                    () => ListView.builder(
+                        itemCount: controller.languages.length,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 10),
+                        physics: const BouncingScrollPhysics(),
+                        itemBuilder: (context, index) {
+                          Language language = controller.languages[index];
+                          bool isSelected =
+                              language == controller.selectedLanguage.value;
+                          
+                          return GestureDetector(
+                            onTap: () => controller.onLanguageChange(language),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              margin: const EdgeInsets.symmetric(vertical: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                              decoration: ShapeDecoration(
+                                shape: SmoothRectangleBorder(
+                                  borderRadius: SmoothBorderRadius(cornerRadius: 15, cornerSmoothing: 1),
+                                  side: BorderSide(
+                                    color: isSelected
+                                        ? whitePure(context)
+                                        : whitePure(context).withValues(alpha: .2),
+                                      width: isSelected ? 1.5 : 1,
                                   ),
-                                  color: whitePure(context).withValues(alpha: isSelected ? .3 : .1),
                                 ),
-                                child: RadioListTile<Language?>(
-                                    value: language,
-                                    groupValue: controller.selectedLanguage.value,
-                                    onChanged: controller.onLanguageChange,
-                                    activeColor: whitePure(context),
-                                    fillColor: WidgetStatePropertyAll(whitePure(context)),
-                                    splashRadius: 0,
-                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    dense: true,
-                                    visualDensity: const VisualDensity(
-                                      horizontal: VisualDensity.minimumDensity,
-                                      vertical: VisualDensity.minimumDensity,
-                                    ),
-                                    contentPadding: EdgeInsets.zero,
-                                    title: Text(
-                                      language.localizedTitle ?? '',
-                                      style: TextStyleCustom.outFitLight300(fontSize: 15, color: whitePure(context)),
-                                    ),
-                                    subtitle: Text(
-                                      language.title ?? '',
-                                      style: TextStyleCustom.outFitMedium500(fontSize: 17, color: whitePure(context)),
-                                    )),
+                                color: whitePure(context).withValues(alpha: isSelected ? .25 : .05),
                               ),
-                            );
-                          },
-                        );
-                      }),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          language.localizedTitle ?? '',
+                                          style: TextStyleCustom.outFitMedium500(
+                                              fontSize: 18, color: whitePure(context)),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          language.title ?? '',
+                                          style: TextStyleCustom.outFitLight300(
+                                              fontSize: 14, color: whitePure(context).withValues(alpha: .7)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (isSelected)
+                                    Icon(Icons.check_circle, color: whitePure(context), size: 24)
+                                  else
+                                    Icon(Icons.radio_button_unchecked, 
+                                        color: whitePure(context).withValues(alpha: .4), size: 24),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                  ),
                 ),
                 if (languageNavigationType == LanguageNavigationType.fromStart)
-                  TextButtonCustom(
-                    onTap: () {
-                      SessionManager.instance.setBool(SessionKeys.isLanguageScreenSelect, true);
-                      if ((controller.setting?.onBoarding ?? []).isEmpty) {
-                        Get.off(() => const LoginScreen());
-                      } else {
-                        Get.off(() => const OnBoardingScreen());
-                      }
-                    },
-                    title: LKey.continueText.tr,
-                    margin: const EdgeInsets.all(15),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: TextButtonCustom(
+                      onTap: () {
+                        SessionManager.instance.setBool(SessionKeys.isLanguageScreenSelect, true);
+                        if ((controller.setting?.onBoarding ?? []).isEmpty) {
+                          Get.off(() => const LoginScreen());
+                        } else {
+                          Get.off(() => const OnBoardingScreen());
+                        }
+                      },
+                      title: LKey.continueText.tr,
+                      margin: EdgeInsets.zero,
+                    ),
                   )
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    if (languageNavigationType == LanguageNavigationType.fromSetting) {
+      return CustomAppBar(
+        title: LKey.languages.tr,
+        titleStyle: TextStyleCustom.unboundedSemiBold600(
+            fontSize: 18, color: whitePure(context)),
+        bgColor: Colors.transparent,
+        iconColor: whitePure(context),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            padding: const EdgeInsets.all(15),
+            decoration: ShapeDecoration(
+                color: whitePure(context).withValues(alpha: .1),
+                shape: SmoothRectangleBorder(
+                  borderRadius: SmoothBorderRadius(cornerRadius: 15),
+                )),
+            child: Image.asset(
+              AssetRes.icLanguage, 
+              color: whitePure(context),
+              errorBuilder: (context, error, stackTrace) => Icon(Icons.language, color: whitePure(context), size: 30),
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  LKey.select.tr.toUpperCase(),
+                  style: TextStyleCustom.unboundedBlack900(
+                      fontSize: 22, color: whitePure(context)),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+                Text(
+                  LKey.language.tr.toUpperCase(),
+                  style: TextStyleCustom.unboundedBlack900(
+                      fontSize: 22,
+                      color: whitePure(context).withValues(alpha: .5)),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
               ],
             ),
           ),
