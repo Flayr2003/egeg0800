@@ -28,8 +28,13 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.0' # الإصدار المتوافق مع الكود الحالي
+          flutter-version: '3.29.0'
           channel: 'stable'
+
+      - name: Configure Git for dependencies
+        run: |
+          git config --global url."https://gitlab.com/".insteadOf "git@gitlab.com:"
+          git config --global url."https://".insteadOf "git://"
 
       - name: Decode Keystore
         run: |
