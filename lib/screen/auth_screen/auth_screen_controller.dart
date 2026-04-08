@@ -64,24 +64,23 @@ class AuthScreenController extends BaseController {
     showLoader();
 
     try {
-      // --- FAKE LOGIN OVERRIDE ---
-      // This bypasses Firebase and calls the backend fake login directly
-      Loggers.info('Starting Fake/Bypass login for: $email');
-      final user.User? data = await _registration(
-          identity: email, 
-          loginMethod: LoginMethod.email, 
-          loginVia: LoginVia.logInFakeUser, 
-          password: password
-      );
-      stopLoader();
+      // Real Login using Firebase
+      UserCredential? credential = await signInWithEmailAndPassword();
+      if (credential != null) {
+        final user.User? data = await _registration(
+            identity: email, 
+            loginMethod: LoginMethod.email, 
+            loginVia: LoginVia.loginInUser, 
+            password: password
+        );
+        stopLoader();
 
-      if (data != null) {
-        Loggers.success('Bypass login successful');
-        _navigateScreen(data);
+        if (data != null) {
+          _navigateScreen(data);
+        }
       } else {
-        Loggers.error('Backend returned null for bypass login');
+        stopLoader();
       }
-      // --- END FAKE LOGIN OVERRIDE ---
     } catch (e) {
       Loggers.error('Unexpected error in onLogin: $e');
       stopLoader();
@@ -126,32 +125,27 @@ class AuthScreenController extends BaseController {
 
   void onGoogleTap() async {
     showLoader();
-    
-    // --- FAKE GOOGLE LOGIN OVERRIDE ---
-    // Instead of Google Auth, we use a fixed test email to bypass
-    String fakeEmail = "testuser@flayr.com";
-    Loggers.info('Bypassing Google Sign-In with fake email: $fakeEmail');
-    
-    user.User? data;
+    UserCredential? credential;
     try {
-      data = await _registration(
-          identity: fakeEmail,
-          loginMethod: LoginMethod.google,
-          fullname: "Test User",
-          loginVia: LoginVia.loginInUser);
+      credential = await signInWithGoogle();
     } catch (e) {
-      Loggers.error('Bypass Registration Error: $e');
+      Loggers.error(e);
       stopLoader();
-      showSnackBar('Google Sign-In is currently disabled. Using bypass failed.');
       return;
     }
-
+    if (credential.user == null) {
+      stopLoader();
+      return;
+    }
+    user.User? data = await _registration(
+        identity: credential.user?.email ?? '',
+        loginMethod: LoginMethod.google,
+        fullname: credential.user?.displayName ?? credential.user?.email?.split('@')[0],
+        loginVia: LoginVia.loginInUser);
     stopLoader();
     if (data != null) {
-      Loggers.success('Bypass Google login successful');
       _navigateScreen(data);
     }
-    // --- END FAKE GOOGLE LOGIN OVERRIDE ---
   }
 
   void onAppleTap() async {
@@ -190,10 +184,9 @@ class AuthScreenController extends BaseController {
     Loggers.info('Fetching device token for registration...');
     String? deviceToken = '';
     try {
-      // Check if we are on a real device/emulator that supports FCM
       if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
         deviceToken = await FirebaseNotificationManager.instance.getNotificationToken().timeout(
-          const Duration(seconds: 3), // Reduced timeout for better UX
+          const Duration(seconds: 3),
           onTimeout: () {
             Loggers.warning('FCM Token fetch timed out, using empty token');
             return '';
@@ -204,18 +197,15 @@ class AuthScreenController extends BaseController {
       Loggers.error('Error fetching device token: $e');
     }
     deviceToken ??= '';
-    Loggers.info('Device Token: ${deviceToken.isEmpty ? "EMPTY" : "RECEIVED"}');
 
     user.User? userData;
     try {
       switch (loginVia) {
         case LoginVia.loginInUser:
-          Loggers.info('Calling logInUser API for $identity');
           userData = await UserService.instance
               .logInUser(identity: identity, loginMethod: loginMethod, deviceToken: deviceToken, fullName: fullname);
           break;
         case LoginVia.logInFakeUser:
-          Loggers.info('Calling logInFakeUser API for $identity');
           userData = await UserService.instance
               .logInFakeUser(identity: identity, loginMethod: loginMethod, deviceToken: deviceToken, password: password);
           break;
@@ -240,7 +230,6 @@ class AuthScreenController extends BaseController {
     }
     SubscriptionManager.shared.login('${userData?.id}');
     if (userData != null) {
-      // Subscribe My Following Ids For Live streaming notification
       return userData;
     }
     return null;
@@ -275,16 +264,12 @@ class AuthScreenController extends BaseController {
       stopLoader();
       if (e.code == 'user-not-found') {
         showSnackBar(LKey.noUserFound.tr);
-        Loggers.info(LKey.noUserFound.tr);
       } else if (e.code == 'wrong-password') {
         showSnackBar(LKey.incorrectPassword.tr);
-        Loggers.info(LKey.incorrectPassword.tr);
       } else if (e.code == 'invalid-credential') {
         showSnackBar(LKey.incorrectPassword.tr);
-        Loggers.error('Invalid credential: ${e.message}');
       } else {
         showSnackBar(e.message ?? 'Login failed. Please try again.');
-        Loggers.error('FirebaseAuthException: ${e.code} - ${e.message}');
       }
       return null;
     } catch (e) {
@@ -294,86 +279,56 @@ class AuthScreenController extends BaseController {
     }
   }
 
-  /// Google Sign-In using google_sign_in v7+ API
   Future<UserCredential> signInWithGoogle() async {
-    // Step 1: Authenticate (triggers account picker / Credential Manager)
     final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
-    if (googleUser == null) {
-      throw Exception('Google Sign-In cancelled by user');
-    }
+    if (googleUser == null) throw 'Google Sign-In cancelled';
 
-    // Step 2: Get authentication details (MUST use await)
     final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-    
-    // Step 3: Get idToken from authentication
-    final String? idToken = googleAuth.idToken;
+    final AuthCredential credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
 
-    if (idToken == null) {
-      throw Exception('Google Sign-In failed: idToken is null');
-    }
-
-    // Step 4: Create Firebase credential with idToken only
-    final credential = GoogleAuthProvider.credential(idToken: idToken);
-
-    // Step 5: Sign in to Firebase
     return await FirebaseAuth.instance.signInWithCredential(credential);
   }
 
-  Future<UserCredential> signInWithApple() async {
-    // Request credential for the currently signed in Apple account.
+  Future<UserCredential?> signInWithApple() async {
     final appleCredential = await SignInWithApple.getAppleIDCredential(
-      scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
+      scopes: [
+        AppleIDAuthorizationScope.email,
+        AppleIDAuthorizationScope.fullName,
+      ],
     );
 
-    // Create an `OAuthCredential` from the credential returned by Apple.
-    final oauthCredential = OAuthProvider("apple.com")
-        .credential(idToken: appleCredential.identityToken, accessToken: appleCredential.authorizationCode);
+    final OAuthProvider oAuthProvider = OAuthProvider('apple.com');
+    final AuthCredential credential = oAuthProvider.credential(
+      idToken: appleCredential.identityToken,
+      accessToken: appleCredential.authorizationCode,
+    );
 
-    return await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+    return await FirebaseAuth.instance.signInWithCredential(credential);
+  }
+
+  void _navigateScreen(user.User data) {
+    SessionManager.instance.setUser(data);
+    SessionManager.instance.setAuthToken(data.token);
+    Get.offAll(() => DashboardScreen(myUser: data));
   }
 
   void forgetPassword() async {
-    final email = forgetEmailController.text.trim();
-    if (email.isEmpty) {
-      showSnackBar(LKey.enterEmail.tr);
-      return;
+    if (forgetEmailController.text.trim().isEmpty) {
+      return showSnackBar(LKey.enterEmail.tr);
     }
     showLoader();
     try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: forgetEmailController.text.trim());
       stopLoader();
-      Get.back(); // Close the BottomSheet
-      showSnackBar(LKey.resetPasswordLinkSent.tr);
+      Get.back();
+      showSnackBar(LKey.verificationLinkSent.tr);
     } on FirebaseAuthException catch (e) {
       stopLoader();
-      showSnackBar(e.message ?? "An error occurred. Please try again.");
+      showSnackBar(e.message);
     }
-  }
-
-  void _navigateScreen(user.User? data) {
-    if (data == null) {
-      Loggers.error('Cannot navigate: User data is null');
-      return;
-    }
-
-    Loggers.info('Saving user session and token...');
-    
-    // 1. Save Login Status
-    SessionManager.instance.setLogin(true);
-    
-    // 2. Save User Data
-    SessionManager.instance.setUser(data);
-    
-    // 3. Save Auth Token (CRITICAL)
-    if (data.token != null) {
-      SessionManager.instance.setAuthToken(data.token);
-      Loggers.success('Auth Token saved successfully: ${data.token?.authToken}');
-    } else {
-      Loggers.warning('User data received but Token is NULL - API might not be returning token correctly');
-    }
-
-    // 4. Navigate to Dashboard
-    Get.offAll(() => DashboardScreen(myUser: data));
   }
 }
 
