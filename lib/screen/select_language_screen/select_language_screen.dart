@@ -38,14 +38,13 @@ class SelectLanguageScreen extends StatelessWidget {
                       child: Container(
                         padding:
                             const EdgeInsets.only(left: 20, right: 20, top: 30),
-                        height: 100,
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
-                              width: 70,
-                              height: 70,
-                              padding: const EdgeInsets.all(15),
+                              width: 60,
+                              height: 60,
+                              padding: const EdgeInsets.all(12),
                               decoration: ShapeDecoration(
                                   color:
                                       whitePure(context).withValues(alpha: .1),
@@ -59,18 +58,19 @@ class SelectLanguageScreen extends StatelessWidget {
                             Expanded(
                                 child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
                                   LKey.select.tr.toUpperCase(),
                                   style: TextStyleCustom.unboundedBlack900(
-                                      fontSize: 25, color: whitePure(context)),
+                                      fontSize: 22, color: whitePure(context)),
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                 ),
                                 Text(
                                   LKey.language.tr.toUpperCase(),
                                   style: TextStyleCustom.unboundedBlack900(
-                                      fontSize: 25,
+                                      fontSize: 22,
                                       color: whitePure(context),
                                       opacity: .5),
                                   overflow: TextOverflow.ellipsis,
@@ -93,7 +93,7 @@ class SelectLanguageScreen extends StatelessWidget {
                   child: ListView.builder(
                       itemCount: controller.languages.length,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 15, vertical: 25),
+                          horizontal: 15, vertical: 15),
                       itemBuilder: (context, index) {
                         Language language = controller.languages[index];
                         return Obx(
@@ -103,9 +103,7 @@ class SelectLanguageScreen extends StatelessWidget {
                             return GestureDetector(
                               onTap: () => controller.onLanguageChange(language),
                               child: Container(
-                                height: 60,
-                                alignment: Alignment.center,
-                                margin: const EdgeInsets.symmetric(vertical: 2),
+                                margin: const EdgeInsets.symmetric(vertical: 4),
                                 decoration: ShapeDecoration(
                                   shape: SmoothRectangleBorder(
                                     borderRadius: SmoothBorderRadius(cornerRadius: 10, cornerSmoothing: 1),
@@ -128,14 +126,14 @@ class SelectLanguageScreen extends StatelessWidget {
                                       horizontal: VisualDensity.minimumDensity,
                                       vertical: VisualDensity.minimumDensity,
                                     ),
-                                    contentPadding: EdgeInsets.zero,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                     title: Text(
                                       language.localizedTitle ?? '',
-                                      style: TextStyleCustom.outFitLight300(fontSize: 15, color: whitePure(context)),
+                                      style: TextStyleCustom.outFitLight300(fontSize: 14, color: whitePure(context)),
                                     ),
                                     subtitle: Text(
                                       language.title ?? '',
-                                      style: TextStyleCustom.outFitMedium500(fontSize: 17, color: whitePure(context)),
+                                      style: TextStyleCustom.outFitMedium500(fontSize: 16, color: whitePure(context)),
                                     )),
                               ),
                             );
