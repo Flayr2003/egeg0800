@@ -133,7 +133,7 @@ class AuthScreenController extends BaseController {
       stopLoader();
       return;
     }
-    if (credential.user == null) {
+    if (credential == null || credential.user == null) {
       stopLoader();
       return;
     }
@@ -153,21 +153,19 @@ class AuthScreenController extends BaseController {
     UserCredential? credential;
     try {
       credential = await signInWithApple();
-      Loggers.info(
-          'EMAIL : ${credential.user?.email} FULLNAME : ${credential.user?.displayName ?? credential.user?.email?.split('@')[0]}');
     } catch (e) {
       Loggers.error(e);
       stopLoader();
       return;
     }
-    if (credential?.user == null) {
+    if (credential == null || credential.user == null) {
       stopLoader();
       return;
     }
     user.User? data = await _registration(
-        identity: credential?.user?.email ?? '',
+        identity: credential.user?.email ?? '',
         loginMethod: LoginMethod.apple,
-        fullname: credential?.user?.displayName ?? credential?.user?.email?.split('@')[0],
+        fullname: credential.user?.displayName ?? credential.user?.email?.split('@')[0],
         loginVia: LoginVia.loginInUser);
     stopLoader();
     if (data != null) {
@@ -280,12 +278,12 @@ class AuthScreenController extends BaseController {
   }
 
   Future<UserCredential> signInWithGoogle() async {
-    final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
+    final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.signIn();
     if (googleUser == null) throw 'Google Sign-In cancelled';
 
     final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
     final AuthCredential credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
+      accessToken: googleAuth.idToken,
       idToken: googleAuth.idToken,
     );
 
