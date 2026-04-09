@@ -35,19 +35,7 @@ class AuthScreenController extends BaseController {
   void onInit() {
     CommonService.instance.fetchGlobalSettings();
     FirebaseNotificationManager.instance;
-    // Initialize Google Sign-In once when the controller is created
-    _initGoogleSignIn();
     super.onInit();
-  }
-
-  /// Initialize Google Sign-In with serverClientId (required for v7+)
-  Future<void> _initGoogleSignIn() async {
-    try {
-      await GoogleSignIn.instance.initialize(serverClientId: _googleWebClientId);
-      Loggers.info('GoogleSignIn initialized successfully');
-    } catch (e) {
-      Loggers.error('GoogleSignIn initialization error: $e');
-    }
   }
 
   Future<void> onLogin() async {
@@ -280,7 +268,10 @@ class AuthScreenController extends BaseController {
   }
 
   Future<UserCredential> signInWithGoogle() async {
-    final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.signIn();
+    final GoogleSignIn googleSignIn = GoogleSignIn(
+      serverClientId: _googleWebClientId,
+    );
+    final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
     if (googleUser == null) throw 'Google Sign-In cancelled';
 
     final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
