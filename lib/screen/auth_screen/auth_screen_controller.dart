@@ -115,8 +115,10 @@ class AuthScreenController extends BaseController {
           loginMethod: LoginMethod.email,
           fullname: fullNameController.text.trim(),
           loginVia: LoginVia.loginInUser);
-      credential.user?.updateDisplayName(fullNameController.text.trim());
-      credential.user?.sendEmailVerification();
+      if (credential.user != null) {
+        credential.user!.updateDisplayName(fullNameController.text.trim());
+        credential.user!.sendEmailVerification();
+      }
       Get.back();
       Get.back();
       showSnackBar(LKey.verificationLinkSent.tr);
@@ -283,7 +285,7 @@ class AuthScreenController extends BaseController {
 
     final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
     final AuthCredential credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.idToken,
+      accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
     );
 
