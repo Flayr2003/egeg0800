@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flayr/common/controller/base_controller.dart';
+import 'package:flayr/common/controller/theme_controller.dart';
 import 'package:flayr/common/controller/firebase_firestore_controller.dart';
 import 'package:flayr/common/manager/logger.dart';
 import 'package:flayr/common/manager/session_manager.dart';
@@ -17,6 +18,8 @@ class SettingsScreenController extends BaseController {
   Rx<User?> myUser = Rx<User?>(null);
   Rx<Setting?> settings = Rx<Setting?>(null);
   Rx<WhoCanSeePost> selectedWhoCanSeePost = WhoCanSeePost.values.first.obs;
+  Rx<AppThemePreference> selectedThemePreference =
+      AppThemePreference.system.obs;
   RxBool isUpdateApiCalled = false.obs;
 
   @override
@@ -36,6 +39,9 @@ class SettingsScreenController extends BaseController {
 
     // For refresh user data only
     UserService.instance.fetchUserDetails();
+
+    selectedThemePreference.value =
+        Get.find<ThemeController>().selectedPreference.value;
   }
 
   void onChangedWhoCanSeePost(WhoCanSeePost? value) async {
@@ -67,6 +73,16 @@ class SettingsScreenController extends BaseController {
     isUpdateApiCalled.value = false;
     // For update user value
     myUser.value = SessionManager.instance.getUser();
+  }
+
+  void onChangedThemeMode(AppThemePreference? value) {
+    final selected = value ?? AppThemePreference.system;
+    selectedThemePreference.value = selected;
+    Get.find<ThemeController>().updatePreference(selected);
+  }
+
+  String get appearanceTitle {
+    return Get.locale?.languageCode == 'ar' ? 'المظهر' : 'Appearance';
   }
 
   void onDeleteAccount() {

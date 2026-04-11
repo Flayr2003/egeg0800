@@ -128,7 +128,7 @@ class SelectLanguageScreen extends StatelessWidget {
                         }
                       },
                       title: LKey.continueText.tr,
-                      margin: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                      margin: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, 16),
                     ),
                   )
               ],

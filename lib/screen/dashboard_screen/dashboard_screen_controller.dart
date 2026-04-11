@@ -24,8 +24,8 @@ import 'package:zego_express_engine/zego_express_engine.dart';
 
 class DashboardScreenController extends BaseController with GetSingleTickerProviderStateMixin {
   final List<DashboardNavIcon> bottomIconList = const [
+    DashboardNavIcon(outlined: Icons.home_outlined, filled: Icons.home_rounded),
     DashboardNavIcon(outlined: Icons.ondemand_video_outlined, filled: Icons.ondemand_video),
-    DashboardNavIcon(outlined: Icons.dynamic_feed_outlined, filled: Icons.dynamic_feed),
     DashboardNavIcon(outlined: Icons.live_tv_outlined, filled: Icons.live_tv),
     DashboardNavIcon(outlined: Icons.travel_explore_outlined, filled: Icons.travel_explore),
     DashboardNavIcon(outlined: Icons.mark_chat_unread_outlined, filled: Icons.mark_chat_unread),
@@ -50,8 +50,12 @@ class DashboardScreenController extends BaseController with GetSingleTickerProvi
   @override
   void onInit() {
     super.onInit();
-    if (selectedPageIndex.value == 0) {
-      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark));
+    if (selectedPageIndex.value == 1 || selectedPageIndex.value == 2) {
+      SystemChrome.setSystemUIOverlayStyle(
+          const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark));
+    } else {
+      SystemChrome.setSystemUIOverlayStyle(
+          const SystemUiOverlayStyle(statusBarBrightness: Brightness.light));
     }
     Get.put(GifSheetController());
     Get.put(FirebaseFirestoreController());
@@ -96,9 +100,9 @@ class DashboardScreenController extends BaseController with GetSingleTickerProvi
   }
 
   onChanged(int index) {
-    SystemChrome.setSystemUIOverlayStyle(
-        SystemUiOverlayStyle(statusBarBrightness: index == 0 || index == 2 ? Brightness.dark : Brightness.light));
-    if (index == 1) {
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+        statusBarBrightness: index == 1 || index == 2 ? Brightness.dark : Brightness.light));
+    if (index == 0) {
       onFeedPostScrollDown(index);
     }
     if (selectedPageIndex.value == index) return;

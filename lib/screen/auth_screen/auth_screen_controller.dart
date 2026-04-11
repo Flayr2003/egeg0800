@@ -101,46 +101,135 @@ class AuthScreenController extends BaseController {
     showLoader();
     try {
       final userCredential = await _googleSignInProcess();
-      if (userCredential != null && userCredential.user != null) {
-        final userData = await UserService.instance.logInUser(
-          fullName: userCredential.user!.displayName ?? '',
-          identity: userCredential.user!.uid,
-          loginMethod: LoginMethod.google,
-          deviceToken:
-              await FirebaseNotificationManager.instance.getNotificationToken() ??
-                  '',
-        );
+      final firebaseUser = userCredential?.user;
 
+      if (firebaseUser == null) {
         stopLoader();
-        if (userData != null) {
-          final mergedUser = FirebaseUserSyncService.enrichUserWithFirebaseData(
-            appUser: userData,
-            firebaseUser: userCredential.user,
-            persistInSession: true,
-          );
-          _navigateScreen(mergedUser ?? userData);
-        }
-      } else {
-        stopLoader();
+        showSnackBar(_localizedSignInMessage(
+          ar: 'تعذّر تسجيل الدخول عبر Google. حاول مرة أخرى.',
+          en: 'Unable to sign in with Google. Please try again.',
+        ));
+        return;
       }
+
+      final userData = await UserService.instance.logInUser(
+        fullName: firebaseUser.displayName ?? '',
+        identity: firebaseUser.uid,
+        loginMethod: LoginMethod.google,
+        deviceToken:
+            await FirebaseNotificationManager.instance.getNotificationToken() ??
+                '',
+      );
+
+      stopLoader();
+      if (userData != null) {
+        final mergedUser = FirebaseUserSyncService.enrichUserWithFirebaseData(
+          appUser: userData,
+          firebaseUser: firebaseUser,
+          persistInSession: true,
+        );
+        _navigateScreen(mergedUser ?? userData);
+      }
+    } on GoogleSignInException catch (e) {
+      stopLoader();
+      Loggers.error('Google Sign-In Error: ${e.code} - ${e.description}');
+      showSnackBar(_mapGoogleSignInException(e));
     } catch (e) {
       stopLoader();
       Loggers.error('Google Sign-In Error: $e');
-      showSnackBar(e.toString());
+      showSnackBar(_localizedSignInMessage(
+        ar: 'فشل تسجيل الدخول عبر Google. تأكد من SHA-1 وإعدادات Firebase ثم حاول مرة أخرى.',
+        en: 'Google Sign-In failed. Verify SHA-1 and Firebase setup, then try again.',
+      ));
     }
   }
 
   Future<UserCredential?> _googleSignInProcess() async {
     final GoogleSignIn googleSignIn = GoogleSignIn.instance;
-    final GoogleSignInAccount googleUser = await googleSignIn.authenticate();
+    try {
+      return await _authenticateWithGoogle(googleSignIn);
+    } on GoogleSignInException catch (e) {
+      if (_isRecoverableGoogleError(e)) {
+        await _resetGoogleSession(googleSignIn);
+        return await _authenticateWithGoogle(googleSignIn);
+      }
+      rethrow;
+    }
+  }
 
+  Future<UserCredential?> _authenticateWithGoogle(
+      GoogleSignIn googleSignIn) async {
+    final GoogleSignInAccount googleUser = await googleSignIn.authenticate();
     final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+
+    String? accessToken;
+    try {
+      const googleScopes = <String>['email', 'profile', 'openid'];
+      final GoogleSignInClientAuthorization? authorization = await googleUser
+              .authorizationClient
+              .authorizationForScopes(googleScopes) ??
+          await googleUser.authorizationClient.authorizeScopes(googleScopes);
+      accessToken = authorization?.accessToken;
+    } catch (e) {
+      Loggers.error('Google authorization scope error: $e');
+    }
+
+    if ((googleAuth.idToken?.isEmpty ?? true) &&
+        (accessToken?.isEmpty ?? true)) {
+      throw Exception('Google token is missing.');
+    }
 
     final AuthCredential credential = GoogleAuthProvider.credential(
       idToken: googleAuth.idToken,
+      accessToken: accessToken,
     );
 
     return await FirebaseAuth.instance.signInWithCredential(credential);
+  }
+
+  bool _isRecoverableGoogleError(GoogleSignInException exception) {
+    final errorText =
+        '${exception.code} ${exception.description ?? ''}'.toLowerCase();
+    return errorText.contains('reauth') ||
+        errorText.contains('[16]') ||
+        errorText.contains('account reauth failed');
+  }
+
+  Future<void> _resetGoogleSession(GoogleSignIn googleSignIn) async {
+    try {
+      await googleSignIn.signOut();
+    } catch (_) {}
+    try {
+      await googleSignIn.disconnect();
+    } catch (_) {}
+  }
+
+  String _mapGoogleSignInException(GoogleSignInException exception) {
+    final errorText =
+        '${exception.code} ${exception.description ?? ''}'.toLowerCase();
+
+    if (errorText.contains('canceled')) {
+      return _localizedSignInMessage(
+        ar: 'تم إلغاء تسجيل الدخول عبر Google.',
+        en: 'Google Sign-In was cancelled.',
+      );
+    }
+
+    if (_isRecoverableGoogleError(exception)) {
+      return _localizedSignInMessage(
+        ar: 'تعذّر توثيق حساب Google. تأكد من SHA-1 في Firebase ثم أعد المحاولة.',
+        en: 'Google account re-auth failed. Verify SHA-1 in Firebase and try again.',
+      );
+    }
+
+    return _localizedSignInMessage(
+      ar: 'فشل تسجيل الدخول عبر Google. حاول مرة أخرى.',
+      en: 'Google Sign-In failed. Please try again.',
+    );
+  }
+
+  String _localizedSignInMessage({required String ar, required String en}) {
+    return Get.locale?.languageCode == 'ar' ? ar : en;
   }
 
   Future<void> onAppleTap() async {

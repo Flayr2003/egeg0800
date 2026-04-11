@@ -24,7 +24,7 @@ class ThemeRes {
         titleLarge: TextStyle(color: ColorRes.whitePure),
         titleMedium: TextStyle(color: ColorRes.textDarkGrey),
         titleSmall: TextStyle(color: ColorRes.textLightGrey),
-        labelSmall: TextStyle(color: ColorRes.themeAccentSolid),
+        labelSmall: TextStyle(color: ColorRes.blackPure),
         labelLarge: TextStyle(color: ColorRes.disabledGrey),
       ),
       textSelectionTheme:
@@ -55,7 +55,7 @@ class ThemeRes {
         titleLarge: TextStyle(color: ColorRes.whitePure),
         titleMedium: TextStyle(color: ColorRes.whitePure),
         titleSmall: TextStyle(color: ColorRes.disabledGrey),
-        labelSmall: TextStyle(color: ColorRes.themeAccentSolid),
+        labelSmall: TextStyle(color: ColorRes.whitePure),
         labelLarge: TextStyle(color: ColorRes.disabledGrey),
       ),
       textSelectionTheme: const TextSelectionThemeData(

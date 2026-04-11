@@ -138,6 +138,14 @@ class SessionManager {
     storage.write(SessionKeys.fallbackLang, langCode);
   }
 
+  void setThemeMode(String value) {
+    storage.write(SessionKeys.themeMode, value);
+  }
+
+  String getThemeMode() {
+    return storage.read(SessionKeys.themeMode) ?? 'system';
+  }
+
   String getFallbackLang() {
     return storage.read(SessionKeys.fallbackLang) ?? 'en';
   }
@@ -160,7 +168,7 @@ class SessionManager {
   }
 
   void setLogin(bool isLog) {
-    storage.write(SessionKeys.isLogin, true);
+    storage.write(SessionKeys.isLogin, isLog);
   }
 
   bool get shouldOpenEULASheet {
@@ -191,6 +199,7 @@ class SessionManager {
     storage.remove(SessionKeys.notifyCount);
     storage.remove(SessionKeys.fallbackLang);
     storage.remove(SessionKeys.lang);
+    storage.remove(SessionKeys.themeMode);
   }
 }
 
@@ -204,6 +213,7 @@ class SessionKeys {
   static const authToken = "authToken";
   static const password = "password";
   static const notifyCount = "notify_count";
+  static const themeMode = "theme_mode";
   static const isLanguageScreenSelect = "is_language_screen_select";
   static const isOnBoardingScreenSelect = "is_on_boarding_screen_select";
 }

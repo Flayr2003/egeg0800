@@ -34,9 +34,9 @@ class DashboardScreen extends StatelessWidget {
               child: ProsteIndexedStack(
                 index: controller.selectedPageIndex.value,
                 children: [
-                  IndexedStackChild(child: const HomeScreen(), preload: true),
                   IndexedStackChild(
-                      child: FeedScreen(myUser: myUser), preload: true),
+                      child: MainHomeTab(myUser: myUser), preload: true),
+                  IndexedStackChild(child: const VideoReelsTab(), preload: true),
                   IndexedStackChild(
                       child: const LiveStreamSearchScreen(), preload: true),
                   IndexedStackChild(child: const ExploreScreen(), preload: true),
@@ -77,7 +77,7 @@ class DashboardScreen extends StatelessWidget {
               data: NavigationBarThemeData(
                 height: 64,
                 backgroundColor: blackPure(context),
-                indicatorColor: themeAccentSolid(context).withValues(alpha: .18),
+                indicatorColor: whitePure(context).withValues(alpha: .12),
                 labelTextStyle: WidgetStatePropertyAll(
                   TextStyleCustom.outFitRegular400(
                     fontSize: 10,
@@ -236,3 +236,26 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 }
+
+/// Primary tab shown first in bottom navigation.
+class MainHomeTab extends StatelessWidget {
+  final User? myUser;
+
+  const MainHomeTab({super.key, this.myUser});
+
+  @override
+  Widget build(BuildContext context) {
+    return FeedScreen(myUser: myUser);
+  }
+}
+
+/// Secondary tab for short-video/reels experience.
+class VideoReelsTab extends StatelessWidget {
+  const VideoReelsTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const HomeScreen();
+  }
+}
+
