@@ -36,7 +36,7 @@ class ConfirmationSheet extends StatelessWidget {
               shape: const SmoothRectangleBorder(
                   borderRadius: SmoothBorderRadius.vertical(
                       top: SmoothRadius(cornerRadius: 40, cornerSmoothing: 1))),
-              color: whitePure(context)),
+              color: bgLightGrey(context)),
           child: SafeArea(
             top: false,
             child: Padding(
@@ -48,7 +48,7 @@ class ConfirmationSheet extends StatelessWidget {
                     child: Container(
                         height: 1,
                         width: 100,
-                        color: bgGrey(context),
+                        color: textLightGrey(context),
                         margin: const EdgeInsets.only(top: 10)),
                   ),
                   const SizedBox(height: 20),

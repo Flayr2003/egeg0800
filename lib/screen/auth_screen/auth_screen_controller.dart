@@ -23,6 +23,7 @@ class AuthScreenController extends BaseController {
   TextEditingController forgetEmailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController confirmPassController = TextEditingController();
+  RxBool isGoogleSigningIn = false.obs;
 
   @override
   void onInit() {
@@ -98,13 +99,14 @@ class AuthScreenController extends BaseController {
   }
 
   Future<void> onGoogleTap() async {
+    if (isGoogleSigningIn.value) return;
+    isGoogleSigningIn.value = true;
     showLoader();
     try {
       final userCredential = await _googleSignInProcess();
       final firebaseUser = userCredential?.user;
 
       if (firebaseUser == null) {
-        stopLoader();
         showSnackBar(_localizedSignInMessage(
           ar: 'تعذّر تسجيل الدخول عبر Google. حاول مرة أخرى.',
           en: 'Unable to sign in with Google. Please try again.',
@@ -121,7 +123,6 @@ class AuthScreenController extends BaseController {
                 '',
       );
 
-      stopLoader();
       if (userData != null) {
         final mergedUser = FirebaseUserSyncService.enrichUserWithFirebaseData(
           appUser: userData,
@@ -131,16 +132,17 @@ class AuthScreenController extends BaseController {
         _navigateScreen(mergedUser ?? userData);
       }
     } on GoogleSignInException catch (e) {
-      stopLoader();
       Loggers.error('Google Sign-In Error: ${e.code} - ${e.description}');
       showSnackBar(_mapGoogleSignInException(e));
     } catch (e) {
-      stopLoader();
       Loggers.error('Google Sign-In Error: $e');
       showSnackBar(_localizedSignInMessage(
         ar: 'فشل تسجيل الدخول عبر Google. تأكد من SHA-1 وإعدادات Firebase ثم حاول مرة أخرى.',
         en: 'Google Sign-In failed. Verify SHA-1 and Firebase setup, then try again.',
       ));
+    } finally {
+      stopLoader();
+      isGoogleSigningIn.value = false;
     }
   }
 
@@ -208,19 +210,14 @@ class AuthScreenController extends BaseController {
     final errorText =
         '${exception.code} ${exception.description ?? ''}'.toLowerCase();
 
-    if (errorText.contains('canceled')) {
+    if (_isRecoverableGoogleError(exception)) {
       return _localizedSignInMessage(
-        ar: 'تم إلغاء تسجيل الدخول عبر Google.',
-        en: 'Google Sign-In was cancelled.',
+        ar: 'حدثت مشكلة في إعادة توثيق حساب Google. أعدنا المحاولة تلقائيًا، وإذا استمر الخطأ راجع SHA-1 في Firebase.',
+        en: 'Google account re-auth failed. We retried automatically. If it continues, verify SHA-1 in Firebase.',
       );
     }
 
-    if (_isRecoverableGoogleError(exception)) {
-      return _localizedSignInMessage(
-        ar: 'تعذّر توثيق حساب Google. تأكد من SHA-1 في Firebase ثم أعد المحاولة.',
-        en: 'Google account re-auth failed. Verify SHA-1 in Firebase and try again.',
-      );
-    }
+    if (errorText.contains('canceled')) {
 
     return _localizedSignInMessage(
       ar: 'فشل تسجيل الدخول عبر Google. حاول مرة أخرى.',

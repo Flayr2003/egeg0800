@@ -179,9 +179,22 @@ class LoginScreen extends StatelessWidget {
                               icon: AssetRes.icApple,
                             ),
                           if (Platform.isIOS) const SizedBox(width: 10),
-                          SocialBtn(
-                            onTap: controller.onGoogleTap,
-                            icon: AssetRes.icGoogle,
+                          Obx(
+                            () => SocialBtn(
+                              onTap: controller.onGoogleTap,
+                              isDisabled: controller.isGoogleSigningIn.value,
+                              child: controller.isGoogleSigningIn.value
+                                  ? SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.4,
+                                        color: textDarkGrey(context),
+                                      ),
+                                    )
+                                  : Image.asset(AssetRes.icGoogle,
+                                      height: 32, width: 32),
+                            ),
                           ),
                         ],
                       ),
@@ -273,22 +286,34 @@ class _LoginSheetTextFieldState extends State<LoginSheetTextField> {
 }
 
 class SocialBtn extends StatelessWidget {
-  final String icon;
+  final String? icon;
+  final Widget? child;
+  final bool isDisabled;
   final VoidCallback onTap;
 
-  const SocialBtn({super.key, required this.icon, required this.onTap});
+  const SocialBtn({
+    super.key,
+    this.icon,
+    this.child,
+    this.isDisabled = false,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
-      child: Container(
-        height: 57,
-        width: 57,
-        decoration:
-            BoxDecoration(shape: BoxShape.circle, color: whitePure(context)),
-        alignment: Alignment.center,
-        child: Image.asset(icon, height: 32, width: 32),
+      onTap: isDisabled ? null : onTap,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 180),
+        opacity: isDisabled ? .7 : 1,
+        child: Container(
+          height: 57,
+          width: 57,
+          decoration:
+              BoxDecoration(shape: BoxShape.circle, color: whitePure(context)),
+          alignment: Alignment.center,
+          child: child ?? Image.asset(icon!, height: 32, width: 32),
+        ),
       ),
     );
   }
