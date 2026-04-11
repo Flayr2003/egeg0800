@@ -163,8 +163,8 @@ class SubscriptionScreen extends StatelessWidget {
                   TextButtonCustom(
                       onTap: controller.onMakePurchase,
                       title: LKey.subscribeNow.tr,
-                      backgroundColor: textDarkGrey(context),
-                      titleColor: whitePure(context)),
+                      backgroundColor: Colors.white,
+                      titleColor: Colors.black),
                   Padding(
                     padding:
                         const EdgeInsets.only(left: 20.0, right: 20.0, top: 40),

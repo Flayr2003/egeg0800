@@ -193,8 +193,8 @@ class ShareSheetWidget extends StatelessWidget {
                           TextButtonCustom(
                             onTap: isSelectedListEmpty ? () {} : () => controller.onSendChat(post),
                             title: LKey.send.tr,
-                            backgroundColor: textDarkGrey(context).withValues(alpha: isSelectedListEmpty ? .4 : 1),
-                            titleColor: whitePure(context),
+                            backgroundColor: Colors.white.withValues(alpha: isSelectedListEmpty ? .4 : 1),
+                            titleColor: Colors.black,
                             margin: const EdgeInsets.symmetric(horizontal: 20),
                           )
                         ],

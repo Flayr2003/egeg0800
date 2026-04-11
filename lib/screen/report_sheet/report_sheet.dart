@@ -129,8 +129,8 @@ class ReportSheet extends StatelessWidget {
                 TextButtonCustom(
                   onTap: controller.onReportSubmit,
                   title: LKey.submit.tr,
-                  backgroundColor: textDarkGrey(context),
-                  titleColor: whitePure(context),
+                  backgroundColor: Colors.white,
+                  titleColor: Colors.black,
                 ),
                 SizedBox(height: AppBar().preferredSize.height),
                 const PrivacyPolicyText()

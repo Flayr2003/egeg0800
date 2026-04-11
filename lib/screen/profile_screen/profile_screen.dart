@@ -124,8 +124,8 @@ class ProfileScreen extends StatelessWidget {
                                     onTap: () =>
                                         controller.freezeUnfreezeUser(true),
                                     title: LKey.unFreeze.tr,
-                                    titleColor: whitePure(context),
-                                    backgroundColor: textDarkGrey(context),
+                                    titleColor: Colors.black,
+                                    backgroundColor: Colors.white,
                                   );
                                 })
                               ],

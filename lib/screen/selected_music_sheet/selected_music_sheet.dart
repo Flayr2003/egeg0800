@@ -129,8 +129,8 @@ class SelectedMusicSheet extends StatelessWidget {
                   TextButtonCustom(
                       onTap: controller.onContinueTap,
                       title: LKey.continueText.tr,
-                      backgroundColor: textDarkGrey(context),
-                      titleColor: whitePure(context))
+                      backgroundColor: Colors.white,
+                      titleColor: Colors.black)
                 ],
               ),
             ))

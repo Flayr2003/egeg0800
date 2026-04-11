@@ -58,9 +58,9 @@ class _MentionSheetState extends State<MentionSheet> {
   Widget build(BuildContext context) {
     return Container(
         margin: EdgeInsets.only(top: AppBar().preferredSize.height * 2),
-        decoration: ShapeDecoration(
-            color: whitePure(context),
-            shape: const SmoothRectangleBorder(
+        decoration: const ShapeDecoration(
+            color: Color(0xFF0D0D0D),
+            shape: SmoothRectangleBorder(
                 borderRadius: SmoothBorderRadius.vertical(
                     top: SmoothRadius(cornerRadius: 30, cornerSmoothing: 1)))),
         child: Column(

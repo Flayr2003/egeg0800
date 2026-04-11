@@ -40,7 +40,7 @@ class _LocationSheetState extends State<LocationSheet> {
     return Container(
       margin: EdgeInsets.only(top: AppBar().preferredSize.height * 2),
       decoration: ShapeDecoration(
-        color: whitePure(context),
+        color: const Color(0xFF0D0D0D),
         shape: const SmoothRectangleBorder(
           borderRadius: SmoothBorderRadius.vertical(
             top: SmoothRadius(cornerRadius: 30, cornerSmoothing: 1),
@@ -154,8 +154,8 @@ class LocationErrorWidget extends StatelessWidget {
           },
           title: LKey.turnOnLocationServicesButton.tr,
           fontSize: 14,
-          backgroundColor: textDarkGrey(context),
-          titleColor: whitePure(context),
+          backgroundColor: Colors.white,
+          titleColor: Colors.black,
           radius: 5,
           btnHeight: 35,
           margin: const EdgeInsets.symmetric(horizontal: 40),
