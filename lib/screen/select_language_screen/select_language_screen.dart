@@ -135,6 +135,8 @@ class SelectLanguageScreen extends StatelessWidget {
                       },
                       title: LKey.continueText.tr,
                       margin: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                      backgroundColor: const Color(0xFF2B2E34),
+                      titleColor: Colors.white,
                     ),
                   )
               ],

@@ -86,30 +86,28 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeController = Get.find<ThemeController>();
+    Get.find<ThemeController>();
 
-    return Obx(
-      () => GetMaterialApp(
-        builder: (context, child) =>
-            ScrollConfiguration(behavior: MyBehavior(), child: child!),
-        translations: Get.find<DynamicTranslations>(),
-        locale: Locale(SessionManager.instance.getLang()),
-        fallbackLocale: Locale(SessionManager.instance.getFallbackLang()),
-        localizationsDelegates: [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [
-          Locale('en'),
-          Locale('ar'),
-        ],
-        themeMode: themeController.themeMode.value,
-        darkTheme: ThemeRes.darkTheme(context),
-        theme: ThemeRes.lightTheme(context),
-        debugShowCheckedModeBanner: false,
-        home: const SplashScreen(),
-      ),
+    return GetMaterialApp(
+      builder: (context, child) =>
+          ScrollConfiguration(behavior: MyBehavior(), child: child!),
+      translations: Get.find<DynamicTranslations>(),
+      locale: Locale(SessionManager.instance.getLang()),
+      fallbackLocale: Locale(SessionManager.instance.getFallbackLang()),
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'),
+        Locale('ar'),
+      ],
+      themeMode: ThemeMode.dark,
+      darkTheme: ThemeRes.darkTheme(context),
+      theme: ThemeRes.lightTheme(context),
+      debugShowCheckedModeBanner: false,
+      home: const SplashScreen(),
     );
   }
 }

@@ -85,12 +85,26 @@ class RegistrationScreen extends StatelessWidget {
                       isPasswordField: true,
                     ),
                     const SizedBox(height: 16),
-                    TextButtonCustom(
-                      onTap: controller.onCreateAccount,
-                      title: LKey.createAccount.tr,
-                      backgroundColor: textDarkGrey(context),
-                      horizontalMargin: 20,
-                      titleColor: whitePure(context),
+                    Obx(
+                      () => TextButtonCustom(
+                        onTap: controller.isCredentialSubmitting.value
+                            ? () {}
+                            : controller.onCreateAccount,
+                        title: LKey.createAccount.tr,
+                        backgroundColor: const Color(0xFF2B2E34),
+                        horizontalMargin: 20,
+                        titleColor: whitePure(context),
+                        child: controller.isCredentialSubmitting.value
+                            ? const SizedBox(
+                                height: 22,
+                                width: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.4,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : null,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     const SafeArea(

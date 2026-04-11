@@ -25,11 +25,11 @@ import 'package:zego_express_engine/zego_express_engine.dart';
 class DashboardScreenController extends BaseController with GetSingleTickerProviderStateMixin {
   final List<DashboardNavIcon> bottomIconList = const [
     DashboardNavIcon(outlined: Icons.home_outlined, filled: Icons.home_rounded),
-    DashboardNavIcon(outlined: Icons.ondemand_video_outlined, filled: Icons.ondemand_video),
-    DashboardNavIcon(outlined: Icons.live_tv_outlined, filled: Icons.live_tv),
-    DashboardNavIcon(outlined: Icons.travel_explore_outlined, filled: Icons.travel_explore),
-    DashboardNavIcon(outlined: Icons.mark_chat_unread_outlined, filled: Icons.mark_chat_unread),
-    DashboardNavIcon(outlined: Icons.account_circle_outlined, filled: Icons.account_circle),
+    DashboardNavIcon(outlined: Icons.smart_display_outlined, filled: Icons.smart_display_rounded),
+    DashboardNavIcon(outlined: Icons.live_tv_outlined, filled: Icons.live_tv_rounded),
+    DashboardNavIcon(outlined: Icons.explore_outlined, filled: Icons.explore_rounded),
+    DashboardNavIcon(outlined: Icons.chat_bubble_outline_rounded, filled: Icons.chat_rounded),
+    DashboardNavIcon(outlined: Icons.person_outline_rounded, filled: Icons.person_rounded),
   ];
   RxInt selectedPageIndex = 0.obs;
   RxDouble scaleValue = 1.0.obs;

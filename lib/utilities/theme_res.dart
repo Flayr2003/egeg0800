@@ -54,9 +54,9 @@ class ThemeRes {
       textTheme: const TextTheme(
         titleLarge: TextStyle(color: ColorRes.whitePure),
         titleMedium: TextStyle(color: ColorRes.whitePure),
-        titleSmall: TextStyle(color: ColorRes.disabledGrey),
+        titleSmall: TextStyle(color: Color(0xFFC8CCD1)),
         labelSmall: TextStyle(color: ColorRes.whitePure),
-        labelLarge: TextStyle(color: ColorRes.disabledGrey),
+        labelLarge: TextStyle(color: Color(0xFFB5BAC3)),
       ),
       textSelectionTheme: const TextSelectionThemeData(
         selectionColor: Color(0xFF3A3A3A),

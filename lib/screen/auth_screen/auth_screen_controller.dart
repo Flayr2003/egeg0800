@@ -23,6 +23,7 @@ class AuthScreenController extends BaseController {
   TextEditingController forgetEmailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController confirmPassController = TextEditingController();
+  RxBool isCredentialSubmitting = false.obs;
   RxBool isGoogleSigningIn = false.obs;
 
   @override
@@ -31,6 +32,7 @@ class AuthScreenController extends BaseController {
   }
 
   Future<void> onLogin() async {
+    if (isCredentialSubmitting.value) return;
     if (emailController.text.trim().isEmpty) {
       showSnackBar(LKey.enterEmail.tr);
       return;
@@ -40,27 +42,35 @@ class AuthScreenController extends BaseController {
       return;
     }
 
-    showLoader();
+    isCredentialSubmitting.value = true;
     try {
-      final userData = await UserService.instance.logInFakeUser(
-        identity: emailController.text.trim(),
-        password: passwordController.text.trim(),
-        deviceToken: await FirebaseNotificationManager.instance.getNotificationToken() ?? '',
-        loginMethod: LoginMethod.email,
-      );
+      final userData = await UserService.instance
+          .logInFakeUser(
+            identity: emailController.text.trim(),
+            password: passwordController.text.trim(),
+            deviceToken:
+                await FirebaseNotificationManager.instance.getNotificationToken() ?? '',
+            loginMethod: LoginMethod.email,
+          )
+          .timeout(const Duration(seconds: 12), onTimeout: () => null);
 
-      stopLoader();
       if (userData != null) {
         _navigateScreen(userData);
+      } else {
+        showSnackBar(Get.locale?.languageCode == 'ar'
+            ? 'تعذّر تسجيل الدخول. حاول مرة أخرى.'
+            : 'Login failed. Please try again.');
       }
     } catch (e) {
-      stopLoader();
       Loggers.error('Login Error: $e');
       showSnackBar(e.toString());
+    } finally {
+      isCredentialSubmitting.value = false;
     }
   }
 
   Future<void> onCreateAccount() async {
+    if (isCredentialSubmitting.value) return;
     if (fullNameController.text.trim().isEmpty) {
       showSnackBar(LKey.enterFullName.tr);
       return;
@@ -78,23 +88,30 @@ class AuthScreenController extends BaseController {
       return;
     }
 
-    showLoader();
+    isCredentialSubmitting.value = true;
     try {
-      final userData = await UserService.instance.logInUser(
-        fullName: fullNameController.text.trim(),
-        identity: emailController.text.trim(),
-        deviceToken: await FirebaseNotificationManager.instance.getNotificationToken() ?? '',
-        loginMethod: LoginMethod.email,
-      );
+      final userData = await UserService.instance
+          .logInUser(
+            fullName: fullNameController.text.trim(),
+            identity: emailController.text.trim(),
+            deviceToken:
+                await FirebaseNotificationManager.instance.getNotificationToken() ?? '',
+            loginMethod: LoginMethod.email,
+          )
+          .timeout(const Duration(seconds: 12), onTimeout: () => null);
 
-      stopLoader();
       if (userData != null) {
         _navigateScreen(userData);
+      } else {
+        showSnackBar(Get.locale?.languageCode == 'ar'
+            ? 'تعذّر إنشاء الحساب. حاول مرة أخرى.'
+            : 'Unable to create account. Please try again.');
       }
     } catch (e) {
-      stopLoader();
       Loggers.error('Register Error: $e');
       showSnackBar(e.toString());
+    } finally {
+      isCredentialSubmitting.value = false;
     }
   }
 
@@ -329,7 +346,9 @@ class AuthScreenController extends BaseController {
 
   void _navigateScreen(user.User data) {
     SessionManager.instance.setUser(data);
-    SessionManager.instance.setAuthToken(data.token);
+    if (data.token != null && data.token!.isNotEmpty) {
+      SessionManager.instance.setAuthToken(data.token);
+    }
     SessionManager.instance.setLogin(true);
     Get.offAll(() => DashboardScreen(myUser: data));
   }

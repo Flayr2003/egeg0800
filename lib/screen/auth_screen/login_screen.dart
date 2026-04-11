@@ -110,11 +110,25 @@ class LoginScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          TextButtonCustom(
-                            onTap: controller.onLogin,
-                            title: LKey.logIn.tr,
-                            btnHeight: 50,
-                            horizontalMargin: 0,
+                          Obx(
+                            () => TextButtonCustom(
+                              onTap: controller.isCredentialSubmitting.value
+                                  ? () {}
+                                  : controller.onLogin,
+                              title: LKey.logIn.tr,
+                              btnHeight: 50,
+                              horizontalMargin: 0,
+                              child: controller.isCredentialSubmitting.value
+                                  ? const SizedBox(
+                                      height: 22,
+                                      width: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.4,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : null,
+                            ),
                           )
                         ],
                       ),

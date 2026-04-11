@@ -37,6 +37,8 @@ class TextButtonCustom extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin:
           margin ?? EdgeInsets.symmetric(horizontal: horizontalMargin ?? 15),
@@ -52,14 +54,16 @@ class TextButtonCustom extends StatelessWidget {
                   borderRadius: SmoothBorderRadius(
                       cornerRadius: radius ?? 10, cornerSmoothing: 1),
                   side: borderSide ?? BorderSide.none),
-              color: backgroundColor ?? whitePure(context)),
+              color: backgroundColor ??
+                  (isDark ? const Color(0xFF2B2E34) : whitePure(context))),
           child: child ??
               Text(
                 title.capitalize ?? '',
-            style: TextStyleCustom.outFitRegular400(
-                color: titleColor ?? textDarkGrey(context),
-                fontSize: fontSize ?? 17),
-          ),
+                style: TextStyleCustom.outFitRegular400(
+                    color: titleColor ??
+                        (isDark ? Colors.white : textDarkGrey(context)),
+                    fontSize: fontSize ?? 17),
+              ),
         ),
       ),
     );

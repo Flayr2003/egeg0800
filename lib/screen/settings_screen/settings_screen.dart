@@ -1,10 +1,7 @@
 import 'package:figma_squircle_updated/figma_squircle.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:flayr/common/controller/theme_controller.dart';
-import 'package:flayr/common/manager/session_manager.dart';
 import 'package:flayr/common/widget/custom_app_bar.dart';
-import 'package:flayr/common/widget/custom_drop_down.dart';
 import 'package:flayr/common/widget/custom_toggle.dart';
 import 'package:flayr/languages/languages_keys.dart';
 import 'package:flayr/model/user_model/user_model.dart';
@@ -144,24 +141,6 @@ class SettingsScreen extends StatelessWidget {
                 },
               ),
               SettingLabel(title: LKey.general.toUpperCase()),
-              Obx(
-                () => SettingIconTextWithArrow(
-                  icon: AssetRes.icEdit,
-                  title: controller.appearanceTitle,
-                  widget: CustomDropDownBtn<AppThemePreference>(
-                    items: AppThemePreference.values,
-                    selectedValue: controller.selectedThemePreference.value,
-                    onChanged: controller.onChangedThemeMode,
-                    width: 122,
-                    bgColor: bgGrey(context),
-                    getTitle: (mode) => mode.localizedTitle(
-                        Get.locale?.languageCode ??
-                            SessionManager.instance.getLang()),
-                    style: TextStyleCustom.outFitRegular400(
-                        fontSize: 13, color: textDarkGrey(context)),
-                  ),
-                ),
-              ),
               SettingIconTextWithArrow(
                 icon: AssetRes.icReport,
                 title: LKey.termsOfUse,
