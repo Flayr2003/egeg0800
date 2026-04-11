@@ -111,9 +111,9 @@ class CreateFeedScreen extends StatelessWidget {
         onTap: controller.handleUpload,
         title: LKey.uploadNow.tr,
         backgroundColor:
-            textDarkGrey(context).withValues(alpha: isEmpty.value ? .5 : 1),
+            Colors.white.withValues(alpha: isEmpty.value ? .3 : 1),
         titleColor:
-            whitePure(context).withValues(alpha: isEmpty.value ? .5 : 1),
+            Colors.black.withValues(alpha: isEmpty.value ? .5 : 1),
         margin: EdgeInsets.symmetric(
             vertical: AppBar().preferredSize.height, horizontal: 20),
       );

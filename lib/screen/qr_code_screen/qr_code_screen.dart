@@ -32,7 +32,7 @@ class QrCodeScreen extends StatelessWidget {
                 RepaintBoundary(
                   key: controller.screenshotKey,
                   child: Container(
-                    color: whitePure(context),
+                    color: const Color(0xFF0D0D0D),
                     padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
                     child: Column(
                       spacing: 30,

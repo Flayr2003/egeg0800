@@ -137,8 +137,8 @@ class EditProfileScreen extends StatelessWidget {
             child: TextButtonCustom(
               onTap: controller.onSaveTap,
               title: LKey.save.tr,
-              backgroundColor: textDarkGrey(context),
-              titleColor: whitePure(context),
+              backgroundColor: Colors.white,
+              titleColor: Colors.black,
             ),
           ),
         ],

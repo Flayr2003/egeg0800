@@ -61,8 +61,7 @@ Color bgGrey(BuildContext context) {
 }
 
 Color themeAccentSolid(BuildContext context) {
-  return Theme.of(context).textTheme.labelSmall?.color ??
-      ColorRes.themeAccentSolid;
+  return ColorRes.blueFollow;
 }
 
 Color disableGrey(BuildContext context) {
@@ -86,7 +85,7 @@ Color blackPure(BuildContext context) {
 }
 
 Color bgLightGrey(BuildContext context) {
-  return Theme.of(context).appBarTheme.backgroundColor ?? ColorRes.bgLightGrey;
+  return const Color(0xFF141414);
 }
 
 Color themeColor(BuildContext context) {
