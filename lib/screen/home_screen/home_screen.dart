@@ -46,7 +46,7 @@ class HomeScreen extends StatelessWidget {
                     Center(
                       child: CustomPaint(
                         painter: TrianglePainter(
-                            strokeColor: whitePure(context), strokeWidth: 0, paintingStyle: PaintingStyle.fill),
+                            strokeColor: const Color(0xFF1A1A1A), strokeWidth: 0, paintingStyle: PaintingStyle.fill),
                         child: const SizedBox(height: 9, width: 15),
                       ),
                     ),
@@ -54,7 +54,7 @@ class HomeScreen extends StatelessWidget {
                       width: MediaQuery.of(context).size.width,
                       constraints: const BoxConstraints(maxHeight: 200),
                       decoration: ShapeDecoration(
-                        color: whitePure(context),
+                        color: const Color(0xFF1A1A1A),
                         shape: SmoothRectangleBorder(
                           borderRadius: SmoothBorderRadius(cornerRadius: 8, cornerSmoothing: 1),
                         ),

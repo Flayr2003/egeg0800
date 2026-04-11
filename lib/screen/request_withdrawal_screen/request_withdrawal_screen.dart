@@ -112,7 +112,7 @@ class RequestWithdrawalScreen extends StatelessWidget {
                 prefixIcon: Container(
                     height: 49,
                     width: 49,
-                    color: textDarkGrey(context),
+                    color: const Color(0xFF1A1A1A),
                     alignment: Alignment.center,
                     margin: EdgeInsets.only(
                         right: TextDirection.ltr == Directionality.of(context) ? 13 : 0,
@@ -129,7 +129,7 @@ class RequestWithdrawalScreen extends StatelessWidget {
                   prefixIcon: Container(
                       height: 49,
                       width: 49,
-                      color: textDarkGrey(context),
+                      color: const Color(0xFF1A1A1A),
                       alignment: Alignment.center,
                       margin: EdgeInsets.only(
                           right: TextDirection.ltr == Directionality.of(context) ? 13 : 0,
@@ -184,8 +184,8 @@ class RequestWithdrawalScreen extends StatelessWidget {
                 onTap: controller.onSubmit,
                 title: LKey.submit.tr,
                 horizontalMargin: 15,
-                backgroundColor: textDarkGrey(context),
-                titleColor: whitePure(context),
+                backgroundColor: Colors.white,
+                titleColor: Colors.black,
               ),
               Container(
                   margin: const EdgeInsets.symmetric(vertical: 40),

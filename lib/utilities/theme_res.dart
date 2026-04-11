@@ -73,7 +73,7 @@ Color scaffoldBackgroundColor(BuildContext context) {
 }
 
 Color blueFollow(BuildContext context) {
-  return Theme.of(context).cardTheme.color ?? ColorRes.blueFollow;
+  return ColorRes.blueFollow;
 }
 
 Color bgMediumGrey(BuildContext context) {

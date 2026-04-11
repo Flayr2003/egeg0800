@@ -37,7 +37,7 @@ class CommentHelper {
   DetectableTextEditingController detectableTextController =
       DetectableTextEditingController(
           detectedStyle: TextStyleCustom.outFitMedium500(
-              fontSize: 16, color: ColorRes.themeGradient2),
+              fontSize: 16, color: ColorRes.blueFollow),
           regExp: AppRes.combinedRegex);
 
   User? get myUser => SessionManager.instance.getUser();

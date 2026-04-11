@@ -38,9 +38,15 @@ class QrCodeScreen extends StatelessWidget {
                       spacing: 30,
                       children: [
                         Text(LKey.scanCodeToCheckProfile.tr,
-                            style: TextStyleCustom.unboundedRegular400(color: textDarkGrey(context), fontSize: 15),
+                            style: TextStyleCustom.unboundedRegular400(color: Colors.white, fontSize: 15),
                             textAlign: TextAlign.center),
-                        GradientBorder(
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: GradientBorder(
                             strokeWidth: 15,
                             radius: 50,
                             gradient: StyleRes.themeGradient,
@@ -57,10 +63,11 @@ class QrCodeScreen extends StatelessWidget {
                                     size: const Size(40, 40),
                                     image: controller.myUser?.profilePhoto?.addBaseURL(),
                                     fullName: controller.myUser?.fullname,
-                                    strokeColor: whitePure(context),
+                                    strokeColor: Colors.white,
                                     strokeWidth: 5)
                               ],
                             )),
+                        ),
                         Column(
                           children: [
                             FullNameWithBlueTick(
