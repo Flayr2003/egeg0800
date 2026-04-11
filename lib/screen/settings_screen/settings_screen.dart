@@ -2,6 +2,7 @@ import 'package:figma_squircle_updated/figma_squircle.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flayr/common/widget/custom_app_bar.dart';
+import 'package:flayr/common/widget/custom_drop_down.dart';
 import 'package:flayr/common/widget/custom_toggle.dart';
 import 'package:flayr/languages/languages_keys.dart';
 import 'package:flayr/model/user_model/user_model.dart';

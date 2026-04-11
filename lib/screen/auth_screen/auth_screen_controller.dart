@@ -346,7 +346,7 @@ class AuthScreenController extends BaseController {
 
   void _navigateScreen(user.User data) {
     SessionManager.instance.setUser(data);
-    if (data.token != null && data.token!.isNotEmpty) {
+    if (data.token?.authToken != null && data.token!.authToken!.isNotEmpty) {
       SessionManager.instance.setAuthToken(data.token);
     }
     SessionManager.instance.setLogin(true);
