@@ -21,6 +21,9 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(AuthScreenController());
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? Colors.white : Colors.black87;
+    final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -57,14 +60,14 @@ class LoginScreen extends StatelessWidget {
                                 text: LKey.signIn.tr.toUpperCase(),
                                 style: TextStyleCustom.unboundedBlack900(
                                   fontSize: 25,
-                                  color: whitePure(context),
+                                  color: primaryTextColor,
                                 ).copyWith(letterSpacing: -.2),
                                 children: [
                                   TextSpan(
                                     text: '\n${LKey.toContinue.tr}'.toUpperCase(),
                                     style: TextStyleCustom.unboundedBlack900(
                                       fontSize: 25,
-                                      color: whitePure(context).withValues(alpha: .5),
+                                      color: secondaryTextColor,
                                       opacity: .5,
                                     ),
                                   )
@@ -101,7 +104,7 @@ class LoginScreen extends StatelessWidget {
                                   LKey.forgetPassword.tr,
                                   style: TextStyleCustom.outFitRegular400(
                                     fontSize: 16,
-                                    color: whitePure(context),
+                                    color: primaryTextColor,
                                   ),
                                 ),
                               ),
@@ -128,11 +131,13 @@ class LoginScreen extends StatelessWidget {
                         height: 48,
                         margin: const EdgeInsets.symmetric(vertical: 24),
                         alignment: Alignment.center,
-                        color: whitePure(context).withValues(alpha: .2),
+                        color: isDark
+                            ? whitePure(context).withValues(alpha: .2)
+                            : Colors.black.withValues(alpha: .06),
                         child: Text(
                           LKey.createAccountHere.tr,
                           style: TextStyleCustom.outFitRegular400(
-                            color: whitePure(context),
+                            color: secondaryTextColor,
                             fontSize: 16,
                           ),
                         ),
@@ -144,7 +149,7 @@ class LoginScreen extends StatelessWidget {
                         children: [
                           Expanded(
                             child: CustomDivider(
-                              color: whitePure(context),
+                              color: secondaryTextColor,
                               height: .5,
                             ),
                           ),
@@ -155,13 +160,13 @@ class LoginScreen extends StatelessWidget {
                               LKey.continueWith.tr,
                               style: TextStyleCustom.outFitRegular400(
                                 fontSize: 16,
-                                color: whitePure(context),
+                                color: secondaryTextColor,
                               ),
                             ),
                           ),
                           Expanded(
                             child: CustomDivider(
-                              color: whitePure(context),
+                              color: secondaryTextColor,
                               height: .5,
                             ),
                           ),
@@ -200,9 +205,8 @@ class LoginScreen extends StatelessWidget {
                       ),
                     ),
                     PrivacyPolicyText(
-                      boldTextColor: whitePure(context),
-                      regularTextColor:
-                          whitePure(context).withValues(alpha: .8),
+                      boldTextColor: primaryTextColor,
+                      regularTextColor: secondaryTextColor,
                     )
                   ],
                 ),
@@ -237,19 +241,26 @@ class _LoginSheetTextFieldState extends State<LoginSheetTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fieldTextColor = isDark ? Colors.white : Colors.black87;
+    final borderColor =
+        isDark ? Colors.white.withValues(alpha: .4) : Colors.black.withValues(alpha: .18);
+    final fieldBgColor =
+        isDark ? Colors.white.withValues(alpha: .10) : Colors.white.withValues(alpha: .92);
+
     return Container(
       decoration: ShapeDecoration(
           shape: SmoothRectangleBorder(
             borderRadius:
                 SmoothBorderRadius(cornerRadius: 10, cornerSmoothing: 1),
-            side: BorderSide(color: whitePure(context).withValues(alpha: .4)),
+            side: BorderSide(color: borderColor),
             borderAlign: BorderAlign.inside,
           ),
-          color: whitePure(context).withValues(alpha: .1)),
+          color: fieldBgColor),
       child: TextField(
         controller: widget.controller,
-        style: TextStyleCustom.outFitRegular400(
-            color: whitePure(context), fontSize: 16),
+        style:
+            TextStyleCustom.outFitRegular400(color: fieldTextColor, fontSize: 16),
         onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
         obscureText: widget.isPasswordField && isHide,
         keyboardType: widget.keyboardType ?? TextInputType.text,
@@ -257,7 +268,7 @@ class _LoginSheetTextFieldState extends State<LoginSheetTextField> {
           border: InputBorder.none,
           hintText: widget.hintText,
           hintStyle: TextStyleCustom.outFitRegular400(
-              color: whitePure(context), fontSize: 16),
+              color: isDark ? Colors.white70 : Colors.black45, fontSize: 16),
           contentPadding: EdgeInsetsDirectional.only(
               start: 10, end: 10, top: widget.isPasswordField ? 2 : 0),
           suffixIconConstraints: const BoxConstraints(),
@@ -273,13 +284,13 @@ class _LoginSheetTextFieldState extends State<LoginSheetTextField> {
                         isHide ? AssetRes.icEye : AssetRes.icHideEye,
                         height: 24,
                         width: 35,
-                        color: whitePure(context),
+                        color: isDark ? whitePure(context) : Colors.black87,
                         key: UniqueKey()),
                   ),
                 )
               : null,
         ),
-        cursorColor: whitePure(context),
+        cursorColor: isDark ? whitePure(context) : Colors.black87,
       ),
     );
   }

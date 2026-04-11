@@ -101,7 +101,7 @@ class AuthScreenController extends BaseController {
   Future<void> onGoogleTap() async {
     if (isGoogleSigningIn.value) return;
     isGoogleSigningIn.value = true;
-    showLoader();
+
     try {
       final userCredential = await _googleSignInProcess();
       final firebaseUser = userCredential?.user;
@@ -114,23 +114,31 @@ class AuthScreenController extends BaseController {
         return;
       }
 
-      final userData = await UserService.instance.logInUser(
+      final backendLoginFuture = UserService.instance.logInUser(
         fullName: firebaseUser.displayName ?? '',
         identity: firebaseUser.uid,
         loginMethod: LoginMethod.google,
         deviceToken:
-            await FirebaseNotificationManager.instance.getNotificationToken() ??
-                '',
+            await FirebaseNotificationManager.instance.getNotificationToken() ?? '',
       );
 
-      if (userData != null) {
+      final backendUser = await backendLoginFuture
+          .timeout(const Duration(seconds: 3), onTimeout: () => null);
+
+      if (backendUser != null) {
         final mergedUser = FirebaseUserSyncService.enrichUserWithFirebaseData(
-          appUser: userData,
+          appUser: backendUser,
           firebaseUser: firebaseUser,
           persistInSession: true,
         );
-        _navigateScreen(mergedUser ?? userData);
+        _navigateScreen(mergedUser ?? backendUser);
+        return;
       }
+
+      // Immediate entry to app if backend is delayed; sync continues in background.
+      final optimisticUser = _createOptimisticUser(firebaseUser);
+      _navigateScreen(optimisticUser);
+      _syncGoogleUserInBackground(firebaseUser);
     } on GoogleSignInException catch (e) {
       Loggers.error('Google Sign-In Error: ${e.code} - ${e.description}');
       showSnackBar(_mapGoogleSignInException(e));
@@ -141,8 +149,48 @@ class AuthScreenController extends BaseController {
         en: 'Google Sign-In failed. Verify SHA-1 and Firebase setup, then try again.',
       ));
     } finally {
-      stopLoader();
       isGoogleSigningIn.value = false;
+    }
+  }
+
+  user.User _createOptimisticUser(User firebaseUser) {
+    final existing = SessionManager.instance.getUser();
+    final existingToken = SessionManager.instance.getToken();
+
+    return user.User(
+      id: existing?.id,
+      identity: firebaseUser.uid,
+      fullname: (firebaseUser.displayName?.trim().isNotEmpty ?? false)
+          ? firebaseUser.displayName?.trim()
+          : (existing?.fullname ?? 'Flayr'),
+      username: existing?.username,
+      userEmail: firebaseUser.email ?? existing?.userEmail,
+      profilePhoto: firebaseUser.photoURL ?? existing?.profilePhoto,
+      loginMethod: LoginMethod.google.title(),
+      appLanguage: SessionManager.instance.getLang(),
+      token: existingToken,
+    );
+  }
+
+  Future<void> _syncGoogleUserInBackground(User firebaseUser) async {
+    try {
+      final serverUser = await UserService.instance.logInUser(
+        fullName: firebaseUser.displayName ?? '',
+        identity: firebaseUser.uid,
+        loginMethod: LoginMethod.google,
+        deviceToken:
+            await FirebaseNotificationManager.instance.getNotificationToken() ?? '',
+      );
+
+      if (serverUser != null) {
+        FirebaseUserSyncService.enrichUserWithFirebaseData(
+          appUser: serverUser,
+          firebaseUser: firebaseUser,
+          persistInSession: true,
+        );
+      }
+    } catch (e) {
+      Loggers.error('Background Google sync error: $e');
     }
   }
 
