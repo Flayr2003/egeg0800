@@ -25,9 +25,9 @@ class ChatThread {
     this.lastMsg,
     this.conversationId,
     this.deletedId,
-    this.isDeleted,
-    this.iAmBlocked,
-    this.iBlocked,
+    this.isDeleted = false,
+    this.iAmBlocked = false,
+    this.iBlocked = false,
   });
 
   ChatThread.fromJson(Map<String, dynamic> json) {
@@ -39,9 +39,9 @@ class ChatThread {
     lastMsg = json['last_msg'];
     conversationId = json['conversation_id'];
     deletedId = json['deleted_id'];
-    isDeleted = json['is_deleted'];
-    iAmBlocked = json['i_am_blocked'];
-    iBlocked = json['i_blocked'];
+    isDeleted = json['is_deleted'] ?? false;
+    iAmBlocked = json['i_am_blocked'] ?? false;
+    iBlocked = json['i_blocked'] ?? false;
   }
 
   Map<String, dynamic> toJson() {
@@ -55,9 +55,9 @@ class ChatThread {
     data['last_msg'] = lastMsg;
     data['conversation_id'] = conversationId;
     data['deleted_id'] = deletedId;
-    data['is_deleted'] = isDeleted;
-    data['i_am_blocked'] = iAmBlocked;
-    data['i_blocked'] = iBlocked;
+    data['is_deleted'] = isDeleted ?? false;
+    data['i_am_blocked'] = iAmBlocked ?? false;
+    data['i_blocked'] = iBlocked ?? false;
     return data;
   }
 

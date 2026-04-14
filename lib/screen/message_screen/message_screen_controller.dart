@@ -36,112 +36,48 @@ class MessageScreenController extends BaseController {
 
   Future<void> _listenToUserChatsAndRequests() async {
     isLoading.value = true;
-    db
-        .collection(FirebaseConst.users)
-        .doc(myUser?.id.toString())
-        .collection(FirebaseConst.usersList)
-        .withConverter(
-            fromFirestore: (snapshot, options) => ChatThread.fromJson(snapshot.data()!),
-            toFirestore: (ChatThread value, options) => value.toJson())
-        .where(FirebaseConst.isDeleted, isEqualTo: false)
-        .orderBy(FirebaseConst.id, descending: true)
-        .snapshots()
-        .listen((event) {
-      isLoading.value = false;
-      for (var change in event.docChanges) {
-        final ChatThread? chatUser = change.doc.data();
-        if (chatUser == null) continue;
+    try {
+      db
+          .collection(FirebaseConst.users)
+          .doc(myUser?.id.toString())
+          .collection(FirebaseConst.usersList)
+          .withConverter(
+              fromFirestore: (snapshot, options) => ChatThread.fromJson(snapshot.data()!),
+              toFirestore: (ChatThread value, options) => value.toJson())
+          .where(FirebaseConst.isDeleted, isEqualTo: false)
+          .snapshots()
+          .listen((event) {
+        isLoading.value = false;
+        
+        // Rebuild lists from scratch on each snapshot for reliability
+        chatsUsers.clear();
+        requestsUsers.clear();
+        
+        for (var doc in event.docs) {
+          final ChatThread? chatUser = doc.data();
+          if (chatUser == null) continue;
 
-        switch (change.type) {
-          case DocumentChangeType.added:
-            if (chatUser.userId != -1) {
-              firebaseFirestoreController.fetchUserIfNeeded(chatUser.userId ?? -1);
-            }
-            if (chatUser.chatType == ChatType.approved) {
-              // Avoid duplicates
-              if (!chatsUsers.any((u) => u.userId == chatUser.userId)) {
-                chatsUsers.add(chatUser);
-              }
-            } else {
-              if (!requestsUsers.any((u) => u.userId == chatUser.userId)) {
-                requestsUsers.add(chatUser);
-              }
-            }
-
-            break;
-          case DocumentChangeType.modified:
-            // Remove the user from their current list
-            final userId = chatUser.userId;
-            chatsUsers.removeWhere((user) => user.userId == userId);
-            requestsUsers.removeWhere((user) => user.userId == userId);
-
-            (chatUser.chatType == ChatType.approved ? chatsUsers : requestsUsers).add(chatUser);
-          case DocumentChangeType.removed:
-            // Remove the user from their current list
-            final userId = chatUser.userId;
-            chatsUsers.removeWhere((user) => user.userId == userId);
-            requestsUsers.removeWhere((user) => user.userId == userId);
-            break;
+          if (chatUser.userId != null && chatUser.userId != -1) {
+            firebaseFirestoreController.fetchUserIfNeeded(chatUser.userId ?? -1);
+          }
+          if (chatUser.chatType == ChatType.approved) {
+            chatsUsers.add(chatUser);
+          } else {
+            requestsUsers.add(chatUser);
+          }
         }
-      }
 
-      chatsUsers.sort(
-        (a, b) {
-          return (b.id ?? '0').compareTo(a.id ?? '0');
-        },
-      );
-      requestsUsers.sort(
-        (a, b) {
-          return (b.id ?? '0').compareTo(a.id ?? '0');
-        },
-      );
-
-      // Loggers.success('CHAT USER: ${chatsUsers.length}');
-      // Loggers.success('REQUEST USER: ${requestsUsers.length}');
-    }, onError: (error) {
+        // Sort in Dart (no Firestore orderBy needed = no composite index)
+        chatsUsers.sort((a, b) => (b.id ?? '0').compareTo(a.id ?? '0'));
+        requestsUsers.sort((a, b) => (b.id ?? '0').compareTo(a.id ?? '0'));
+      }, onError: (error) {
+        isLoading.value = false;
+        Loggers.error('Chat listener error: $error');
+      });
+    } catch (e) {
       isLoading.value = false;
-      Loggers.error('Chat listener error: $error');
-      // If composite index is missing, try without orderBy as fallback
-      _listenToUserChatsAndRequestsFallback();
-    });
-  }
-
-  /// Fallback listener without orderBy (in case composite index is missing)
-  Future<void> _listenToUserChatsAndRequestsFallback() async {
-    db
-        .collection(FirebaseConst.users)
-        .doc(myUser?.id.toString())
-        .collection(FirebaseConst.usersList)
-        .withConverter(
-            fromFirestore: (snapshot, options) => ChatThread.fromJson(snapshot.data()!),
-            toFirestore: (ChatThread value, options) => value.toJson())
-        .where(FirebaseConst.isDeleted, isEqualTo: false)
-        .snapshots()
-        .listen((event) {
-      isLoading.value = false;
-      chatsUsers.clear();
-      requestsUsers.clear();
-      
-      for (var doc in event.docs) {
-        final ChatThread? chatUser = doc.data();
-        if (chatUser == null) continue;
-
-        if (chatUser.userId != -1) {
-          firebaseFirestoreController.fetchUserIfNeeded(chatUser.userId ?? -1);
-        }
-        if (chatUser.chatType == ChatType.approved) {
-          chatsUsers.add(chatUser);
-        } else {
-          requestsUsers.add(chatUser);
-        }
-      }
-
-      chatsUsers.sort((a, b) => (b.id ?? '0').compareTo(a.id ?? '0'));
-      requestsUsers.sort((a, b) => (b.id ?? '0').compareTo(a.id ?? '0'));
-    }, onError: (error) {
-      isLoading.value = false;
-      Loggers.error('Chat fallback listener error: $error');
-    });
+      Loggers.error('Chat listener setup error: $e');
+    }
   }
 
   void onLongPress(ChatThread chatConversation) {

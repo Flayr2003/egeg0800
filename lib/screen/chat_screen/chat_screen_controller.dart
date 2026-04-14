@@ -401,88 +401,49 @@ class ChatScreenController extends BlockUserController
   void _getChat() async {
     _listenToChatThreadUser();
     await Future.delayed(const Duration(milliseconds: 100));
-    var subscription = chatCollection
-        .where(FirebaseConst.noDeleteIds, arrayContains: myUser?.id)
-        .where(FirebaseConst.id,
-            isGreaterThan: conversationUser.value.deletedId)
-        .orderBy(FirebaseConst.id, descending: true)
-        .limit(AppRes.chatPaginationLimit)
-        .withConverter(
-            fromFirestore: (snapshot, options) =>
-                MessageData.fromJson(snapshot.data()!),
-            toFirestore: (MessageData value, options) => value.toJson())
-        .snapshots()
-        .listen((event) {
-      Loggers.info(' FETCHING CHAT MESSAGES : ${event.docChanges.length}');
-      for (var change in event.docChanges) {
-        final message = change.doc.data();
-        if (message == null) continue;
-        switch (change.type) {
-          case DocumentChangeType.added:
-            if (!chatList.any((m) => m.id == message.id)) {
+    try {
+      var subscription = chatCollection
+          .where(FirebaseConst.noDeleteIds, arrayContains: myUser?.id)
+          .orderBy(FirebaseConst.id, descending: true)
+          .limit(AppRes.chatPaginationLimit)
+          .withConverter(
+              fromFirestore: (snapshot, options) =>
+                  MessageData.fromJson(snapshot.data()!),
+              toFirestore: (MessageData value, options) => value.toJson())
+          .snapshots()
+          .listen((event) {
+        Loggers.info(' FETCHING CHAT MESSAGES : ${event.docChanges.length}');
+        for (var change in event.docChanges) {
+          final message = change.doc.data();
+          if (message == null) continue;
+          switch (change.type) {
+            case DocumentChangeType.added:
+              if (!chatList.any((m) => m.id == message.id)) {
+                chatList.add(message);
+              }
+              break;
+            case DocumentChangeType.modified:
+              chatList.removeWhere((element) => element.id == message.id);
               chatList.add(message);
-            }
-            break;
-          case DocumentChangeType.modified:
-            chatList.removeWhere((element) => element.id == message.id);
-            chatList.add(message);
-            break;
-          case DocumentChangeType.removed:
-            chatList.removeWhere((element) => element.id == message.id);
-            break;
+              break;
+            case DocumentChangeType.removed:
+              chatList.removeWhere((element) => element.id == message.id);
+              break;
+          }
         }
-      }
 
-      chatList.sort((a, b) => b.id?.compareTo(a.id ?? 0) ?? 0);
+        chatList.sort((a, b) => b.id?.compareTo(a.id ?? 0) ?? 0);
 
-      if (event.docs.isNotEmpty) {
-        lastDocument = event.docs.last;
-      }
-    }, onError: (error) {
-      Loggers.error('Chat messages listener error: $error');
-      // Fallback: try without composite index
-      _getChatFallback();
-    });
-    chatListeners.add(subscription);
-  }
-
-  void _getChatFallback() async {
-    var subscription = chatCollection
-        .where(FirebaseConst.noDeleteIds, arrayContains: myUser?.id)
-        .orderBy(FirebaseConst.id, descending: true)
-        .limit(AppRes.chatPaginationLimit)
-        .withConverter(
-            fromFirestore: (snapshot, options) =>
-                MessageData.fromJson(snapshot.data()!),
-            toFirestore: (MessageData value, options) => value.toJson())
-        .snapshots()
-        .listen((event) {
-      for (var change in event.docChanges) {
-        final message = change.doc.data();
-        if (message == null) continue;
-        switch (change.type) {
-          case DocumentChangeType.added:
-            if (!chatList.any((m) => m.id == message.id)) {
-              chatList.add(message);
-            }
-            break;
-          case DocumentChangeType.modified:
-            chatList.removeWhere((element) => element.id == message.id);
-            chatList.add(message);
-            break;
-          case DocumentChangeType.removed:
-            chatList.removeWhere((element) => element.id == message.id);
-            break;
+        if (event.docs.isNotEmpty) {
+          lastDocument = event.docs.last;
         }
-      }
-      chatList.sort((a, b) => b.id?.compareTo(a.id ?? 0) ?? 0);
-      if (event.docs.isNotEmpty) {
-        lastDocument = event.docs.last;
-      }
-    }, onError: (error) {
-      Loggers.error('Chat fallback messages listener error: $error');
-    });
-    chatListeners.add(subscription);
+      }, onError: (error) {
+        Loggers.error('Chat messages listener error: $error');
+      });
+      chatListeners.add(subscription);
+    } catch (e) {
+      Loggers.error('Chat listener setup error: $e');
+    }
   }
 
   Future<void> fetchMoreChatList() async {
