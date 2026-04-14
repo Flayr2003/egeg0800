@@ -279,10 +279,15 @@ class ChatScreenController extends BlockUserController
     conversation.msgCount = 0;
     conversation.isDeleted = false;
 
-    if (isReceiverUserExist) {
-      documentSender.update(conversation.toJson());
-    } else {
-      documentSender.set(conversation.toJson());
+    try {
+      if (isReceiverUserExist) {
+        await documentSender.update(conversation.toJson());
+      } else {
+        await documentSender.set(conversation.toJson());
+      }
+      Loggers.info('Sender chat thread updated successfully');
+    } catch (e) {
+      Loggers.error('Error updating sender chat thread: $e');
     }
 
     // For Receiver side
@@ -965,26 +970,42 @@ class ChatScreenController extends BlockUserController
   }
 
   void _addUsersFirebaseFireStore() async {
-    DocumentReference myUserRef = collectionUsersRef.doc(myUser?.id.toString());
-    DocumentReference otherUserRef =
-        collectionUsersRef.doc(conversationUser.value.userId.toString());
+    try {
+      DocumentReference myUserRef = collectionUsersRef.doc(myUser?.id.toString());
+      DocumentReference otherUserRef =
+          collectionUsersRef.doc(conversationUser.value.userId.toString());
 
-    DocumentSnapshot isMyUserExist = await myUserRef.get();
-    DocumentSnapshot isOtherUserExist = await otherUserRef.get();
+      DocumentSnapshot isMyUserExist = await myUserRef.get();
+      DocumentSnapshot isOtherUserExist = await otherUserRef.get();
 
-    if (myUser != null) {
-      if (isMyUserExist.exists) {
-        myUserRef.update(myUser!.appUser.toJson());
-      } else {
-        myUserRef.set(myUser!.appUser.toJson());
+      if (myUser != null) {
+        if (isMyUserExist.exists) {
+          await myUserRef.update(myUser!.appUser.toJson());
+        } else {
+          await myUserRef.set(myUser!.appUser.toJson());
+        }
       }
-    }
-    if (otherUser != null) {
-      if (isOtherUserExist.exists) {
-        otherUserRef.update(otherUser!.appUser.toJson());
-      } else {
-        otherUserRef.set(otherUser!.appUser.toJson());
+      if (otherUser != null) {
+        if (isOtherUserExist.exists) {
+          await otherUserRef.update(otherUser!.appUser.toJson());
+        } else {
+          await otherUserRef.set(otherUser!.appUser.toJson());
+        }
       }
+
+      // Also ensure the sender's chat thread exists in usersList
+      try {
+        DocumentSnapshot senderThreadExists = await documentSender.get();
+        if (!senderThreadExists.exists) {
+          // Create the sender's chat thread if it doesn't exist yet
+          await documentSender.set(conversationUser.value.toJson());
+          Loggers.info('Created sender chat thread in usersList');
+        }
+      } catch (e) {
+        Loggers.error('Error creating sender chat thread: $e');
+      }
+    } catch (e) {
+      Loggers.error('Error in _addUsersFirebaseFireStore: $e');
     }
   }
 }
