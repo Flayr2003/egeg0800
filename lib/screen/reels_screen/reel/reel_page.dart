@@ -94,15 +94,10 @@ class _ReelPageState extends State<ReelPage> {
       _controller!.setLooping(true);
       _initialized = true;
 
-      if (dashboardController.selectedPageIndex.value != 0 && widget.isHomePage) {
-        return;
-      }
-      // ✅ Auto play only when visible and autoplay flag true
-      if (widget.autoPlay && widget.reelsScreenController.isCurrentPageVisible) {
-        await _controller!.play();
-        _increaseViewsCount(widget.reelData);
-        isPlaying = true;
-      }
+      // ✅ Always auto-play when video is ready (no conditions)
+      await _controller!.play();
+      _increaseViewsCount(widget.reelData);
+      isPlaying = true;
 
       setState(() {});
     } catch (e) {
