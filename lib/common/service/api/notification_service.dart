@@ -57,6 +57,12 @@ class NotificationService {
       String? topic,
       num? deviceType,
       String? authorizationToken}) async {
+    // Early return if no token and no topic
+    if ((token ?? '').isEmpty && (topic ?? '').isEmpty) {
+      Loggers.warning('No FCM token or topic - notification not sent');
+      return;
+    }
+
     bool isIOS = deviceType == 1;
 
     Map<String, dynamic> messageData = {
@@ -79,10 +85,10 @@ class NotificationService {
     if (!isIOS) {
       messageData["notification"] = {"body": body, "title": title};
     }
-    if (token != null) {
+    if (token != null && token.isNotEmpty) {
       messageData["token"] = token;
     }
-    if (topic != null) {
+    if (topic != null && topic.isNotEmpty) {
       messageData["topic"] = topic;
     }
 
@@ -99,9 +105,14 @@ class NotificationService {
                 authorizationToken ?? SessionManager.instance.getAuthToken()
           },
           body: json.encode(inputData));
-      Loggers.success('Notification response : ${response.body}');
+      
+      if (response.statusCode == 200) {
+        Loggers.success('Notification sent successfully: ${response.body}');
+      } else {
+        Loggers.error('Notification failed (${response.statusCode}): ${response.body}');
+      }
     } catch (e) {
-      Loggers.error(e);
+      Loggers.error('Notification send error: $e');
     }
   }
 }
