@@ -1,0 +1,49 @@
+name: Build Release APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Release APK
+        run: flutter build apk --release
+
+      - name: Extract SHA-1 from APK
+        run: |
+          echo "========================================="
+          echo "  SHA-1 Certificate Fingerprint"
+          echo "========================================="
+          keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk
+          echo "========================================="
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: flayr-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
