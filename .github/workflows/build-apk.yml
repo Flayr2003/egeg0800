@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build & Release APK
 
 on:
   push:
@@ -30,6 +30,14 @@ jobs:
           channel: 'stable'
           cache: true
 
+      # ─── Accept Android SDK Licenses & Install NDK ───────────────
+      - name: Accept Android SDK Licenses & Install NDK
+        run: |
+          ANDROID_SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$ANDROID_SDK/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses || true
+          "$SDKMANAGER" "ndk;29.0.14033849" || true
+
       - name: Configure Git for GitLab dependencies
         run: |
           git config --global url."https://gitlab.com/".insteadOf "git@gitlab.com:"
@@ -39,11 +47,10 @@ jobs:
         run: flutter pub get
         timeout-minutes: 10
 
-      - name: Build Signed Release APK
+      - name: Build Release APK
         run: flutter build apk --release --no-tree-shake-icons
 
-      - name: Get version and prepare release info
-        if: success()
+      - name: Prepare release info
         id: version
         run: |
           VERSION=$(grep 'version:' pubspec.yaml | head -1 | awk '{print $2}')
@@ -53,28 +60,24 @@ jobs:
           FILENAME="Flayr-${VERSION}-build${BUILD_NUM}.apk"
           APK_SIZE=$(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1)
 
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "filename=$FILENAME" >> $GITHUB_OUTPUT
-          echo "apk_size=$APK_SIZE" >> $GITHUB_OUTPUT
+          echo "version=$VERSION"     >> $GITHUB_OUTPUT
+          echo "tag=$TAG"             >> $GITHUB_OUTPUT
+          echo "filename=$FILENAME"   >> $GITHUB_OUTPUT
+          echo "apk_size=$APK_SIZE"   >> $GITHUB_OUTPUT
           echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
 
           cp build/app/outputs/flutter-apk/app-release.apk "${FILENAME}"
 
-      - name: Extract SHA-1 from APK
-        if: success()
-        run: |
-          echo "### SHA-1 Certificate Fingerprint" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk >> $GITHUB_STEP_SUMMARY 2>&1 || true
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**APK Size:** ${{ steps.version.outputs.apk_size }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Build:** #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "| Key | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version** | $VERSION |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Build** | #$BUILD_NUM |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | $SHORT_SHA |" >> $GITHUB_STEP_SUMMARY
+          echo "| **APK Size** | $APK_SIZE |" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload APK Artifact
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: flayr-release-apk
@@ -82,23 +85,27 @@ jobs:
           retention-days: 90
 
       - name: Create GitHub Release
-        if: success()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: "Flayr ${{ steps.version.outputs.version }} (Build #${{ github.run_number }})"
           body: |
-            ## Flayr Release - Build #${{ github.run_number }}
+            ## 📱 Flayr — Build #${{ github.run_number }}
 
-            **Version:** ${{ steps.version.outputs.version }}
-            **Commit:** ${{ steps.version.outputs.short_sha }} - ${{ github.event.head_commit.message }}
-            **APK Size:** ${{ steps.version.outputs.apk_size }}
-            **Date:** ${{ github.event.head_commit.timestamp }}
+            | | |
+            |---|---|
+            | **Version** | `${{ steps.version.outputs.version }}` |
+            | **Commit** | `${{ steps.version.outputs.short_sha }}` |
+            | **APK Size** | ${{ steps.version.outputs.apk_size }} |
 
-            ### Download
-            Download **${{ steps.version.outputs.filename }}** below and install on your Android device.
+            **Commit message:** ${{ github.event.head_commit.message }}
 
-            > Enable "Install from unknown sources" in your phone settings if needed.
+            ---
+
+            ### ⬇️ Download & Install
+            1. Download **`${{ steps.version.outputs.filename }}`** below.
+            2. On your Android device, go to **Settings → Security → Install unknown apps** and allow your browser or file manager.
+            3. Open the downloaded APK and tap **Install**.
           files: ${{ steps.version.outputs.filename }}
           draft: false
           prerelease: false
