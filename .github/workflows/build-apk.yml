@@ -79,6 +79,9 @@ jobs:
         run: |
           echo "### 🔐 SHA-1 Certificate Fingerprint" >> $GITHUB_STEP_SUMMARY
           echo "```" >> $GITHUB_STEP_SUMMARY
+          echo "SHA1_START"
+          keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk | grep "SHA1:"
+          echo "SHA1_END"
           keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk | grep "SHA1:" >> $GITHUB_STEP_SUMMARY || echo "Could not extract SHA1" >> $GITHUB_STEP_SUMMARY
           echo "```" >> $GITHUB_STEP_SUMMARY
           echo "Copy the SHA-1 above and add it to your Firebase Console to fix Google Sign-in." >> $GITHUB_STEP_SUMMARY
