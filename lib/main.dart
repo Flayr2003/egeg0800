@@ -50,6 +50,7 @@ Future<void> main() async {
     await Firebase.initializeApp();
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    await FirebaseNotificationManager.instance.init();
 
     await GetStorage.init('shortzz');
 

@@ -350,6 +350,7 @@ class AuthScreenController extends BaseController {
       SessionManager.instance.setAuthToken(data.token);
     }
     SessionManager.instance.setLogin(true);
+    FirebaseNotificationManager.instance.syncDeviceTokenToBackend(force: true);
     Get.offAll(() => DashboardScreen(myUser: data));
   }
 

@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "28441059803",
+    "project_id": "fistayl-b5d1d",
+    "storage_bucket": "fistayl-b5d1d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:28441059803:android:141ca0d2c9637a5f58c7fe",
+        "android_client_info": {
+          "package_name": "com.fistayl.flayr"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "28441059803-58djv13e03eh6ab9urbtgd1tm6qvseet.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fistayl.flayr",
+            "certificate_hash": "e41d930ca5d696274190c4e07544cbaf774d69b3"
+          }
+        },
+        {
+          "client_id": "28441059803-iqk35aaqempgfq8h5r9tgi1q9tlrnrl7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fistayl.flayr",
+            "certificate_hash": "147ab933c8e35cd9e45c27ef5548594565b09d82"
+          }
+        },
+        {
+          "client_id": "28441059803-78ro06cusr82bc0d9ksf3eoo12rvhat1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEOzwqMAMgB56VQfv1guo7n4O1MfHbUZE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "28441059803-78ro06cusr82bc0d9ksf3eoo12rvhat1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

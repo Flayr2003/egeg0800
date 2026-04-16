@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -7,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:flayr/common/controller/base_controller.dart';
+import 'package:flayr/common/controller/firebase_firestore_controller.dart';
 import 'package:flayr/common/manager/logger.dart';
 import 'package:flayr/common/manager/session_manager.dart' show SessionManager;
 import 'package:flayr/common/service/api/notification_service.dart';
@@ -38,9 +40,7 @@ void notificationTapBackground(NotificationResponse notificationResponse) {
 }
 
 class FirebaseNotificationManager {
-  FirebaseNotificationManager._() {
-    init();
-  }
+  FirebaseNotificationManager._();
 
   static final instance = FirebaseNotificationManager._();
 
@@ -58,14 +58,19 @@ class FirebaseNotificationManager {
       importance: Importance.max);
 
   String? notificationId;
+  Future<void>? _initFuture;
+  StreamSubscription<String>? _tokenRefreshSubscription;
 
-  void init() async {
+  Future<void> init() {
+    _initFuture ??= _performInit();
+    return _initFuture!;
+  }
+
+  Future<void> _performInit() async {
     if (Platform.isAndroid) {
-      // Request local notification permission (Android 13+)
       await flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.requestNotificationsPermission();
-      // Also request FCM permission on Android (required for getToken() to work)
       await firebaseMessaging.requestPermission(alert: true, badge: false, sound: true);
     } else {
       await flutterLocalNotificationsPlugin
@@ -74,18 +79,16 @@ class FirebaseNotificationManager {
       await firebaseMessaging.requestPermission(alert: true, badge: false, sound: true);
     }
 
-    subscribeToTopic();
+    await subscribeToTopic();
 
-    var initializationSettingsAndroid = const AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    var initializationSettingsIOS = const DarwinInitializationSettings(
+    const initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const initializationSettingsIOS = DarwinInitializationSettings(
         defaultPresentAlert: true, defaultPresentSound: true, defaultPresentBadge: false);
 
-    var initializationSettings = InitializationSettings(
+    const initializationSettings = InitializationSettings(
         android: initializationSettingsAndroid, iOS: initializationSettingsIOS);
 
-    // Handling notification taps
-    flutterLocalNotificationsPlugin.initialize(initializationSettings,
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
       print('onDidReceiveNotificationResponse ${response.payload}');
       String? payload = response.payload;
@@ -95,13 +98,12 @@ class FirebaseNotificationManager {
     }, onDidReceiveBackgroundNotificationResponse: notificationTapBackground);
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      // If Notification has gone twice
       if (notificationId == message.messageId) return;
       notificationId = message.messageId;
 
       String data = message.data['notification_data'] ?? '';
 
-      if (message.data['type'] == NotificationType.chat.type) {
+      if (message.data['type'] == NotificationType.chat.type && data.isNotEmpty) {
         ChatThread conversationUser = ChatThread.fromJson(jsonDecode(data));
         if (conversationUser.conversationId == ChatScreenController.chatId) {
           return;
@@ -120,9 +122,53 @@ class FirebaseNotificationManager {
       }
     });
 
+    _tokenRefreshSubscription ??= firebaseMessaging.onTokenRefresh.listen((token) async {
+      await syncDeviceTokenToBackend(token: token, force: true);
+    });
+
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
+
+    await syncDeviceTokenToBackend(force: false);
+  }
+
+  Future<void> syncDeviceTokenToBackend({String? token, bool force = false}) async {
+    final resolvedToken = token ?? await firebaseMessaging.getToken();
+    if ((resolvedToken ?? '').isEmpty) {
+      Loggers.warning('FCM token unavailable, skipping sync.');
+      return;
+    }
+
+    final currentUser = SessionManager.instance.getUser();
+    if (currentUser == null) {
+      Loggers.info('FCM token ready but no logged-in user yet.');
+      return;
+    }
+
+    if (!force && currentUser.deviceToken == resolvedToken) {
+      return;
+    }
+
+    final updatedUser = currentUser.copyWith(
+      deviceToken: resolvedToken,
+      device: Platform.isAndroid ? 0 : 1,
+    );
+    SessionManager.instance.setUser(updatedUser);
+    FirebaseFirestoreController.instance.updateUser(updatedUser);
+
+    final authToken = SessionManager.instance.getAuthToken();
+    if ((authToken ?? '').isEmpty) {
+      Loggers.info('FCM token stored locally; backend sync postponed until auth token exists.');
+      return;
+    }
+
+    try {
+      await UserService.instance.updateUserDetails(deviceToken: resolvedToken);
+      Loggers.success('FCM token synced successfully.');
+    } catch (e) {
+      Loggers.error('Failed to sync FCM token: $e');
+    }
   }
 
   void unsubscribeToTopic({String? topic}) async {
@@ -249,8 +295,12 @@ class FirebaseNotificationManager {
 
   Future<String?> getNotificationToken() async {
     try {
+      await init();
       String? token = await FirebaseMessaging.instance.getToken();
       Loggers.info('DeviceToken $token');
+      if ((token ?? '').isNotEmpty) {
+        await syncDeviceTokenToBackend(token: token);
+      }
       return token;
     } catch (e) {
       Loggers.error('DeviceToken Exception $e');

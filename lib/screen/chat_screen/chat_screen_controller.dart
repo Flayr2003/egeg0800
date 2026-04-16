@@ -171,7 +171,7 @@ class ChatScreenController extends BlockUserController
     });
   }
 
-  _fetchOtherUser() async {
+  Future<void> _fetchOtherUser() async {
     int userId = conversationUser.value.userId ?? -1;
     if (userId != -1) {
       otherUser = await UserService.instance.fetchUserDetails(userId: userId);
@@ -233,14 +233,18 @@ class ChatScreenController extends BlockUserController
       String? postMessage,
       String? storyReplyMessage,
       List<double>? waveData}) async {
-    int time = DateTime.now().millisecondsSinceEpoch;
+    final int time = DateTime.now().millisecondsSinceEpoch;
 
-    List<int> noDeleteIds = [
+    if (otherUser == null) {
+      await _fetchOtherUser();
+    }
+
+    final List<int> noDeleteIds = [
       myUser?.id ?? -1,
       conversationUser.value.chatUser?.userId ?? -1,
     ];
 
-    MessageData message = MessageData(
+    final MessageData message = MessageData(
       userId: myUser?.id,
       conversationId: conversationUser.value.conversationId,
       textMessage: textMessage,
@@ -259,48 +263,27 @@ class ChatScreenController extends BlockUserController
 
     Loggers.success('FIREBASE MESSAGE : ${message.toJson()}');
 
-    // Entry chat list
-    chatCollection
-        .doc(time.toString())
-        .set(message.toJson())
-        .catchError((error) {
-      Loggers.error('Chat Collection ERROR : $error');
-    });
+    final senderLastMessage = getLastMessage(type, message, isSender: true);
+    final receiverLastMessage = getLastMessage(type, message, isSender: false);
+    final receiverSnapshot = await documentReceiver.get();
 
-    // For Sender side
-    bool isReceiverUserExist = (await documentSender.get()).exists;
+    final ChatThread senderConversation =
+        ChatThread.fromJson(Map<String, dynamic>.from(conversationUser.value.toJson()));
+    senderConversation.id = time.toString();
+    senderConversation.lastMsg = senderLastMessage;
+    senderConversation.msgCount = 0;
+    senderConversation.isDeleted = false;
 
-    // Loggers.success('RECEIVER USER isExist: $isReceiverUserExist');
-    String senderLastMessage = getLastMessage(type, message, isSender: true);
-    String receiverLastMessage = getLastMessage(type, message, isSender: false);
-    ChatThread conversation = conversationUser.value;
-    conversation.id = time.toString();
-    conversation.lastMsg = senderLastMessage;
-    conversation.msgCount = 0;
-    conversation.isDeleted = false;
-
-    try {
-      if (isReceiverUserExist) {
-        await documentSender.update(conversation.toJson());
-      } else {
-        await documentSender.set(conversation.toJson());
-      }
-      Loggers.info('Sender chat thread updated successfully');
-    } catch (e) {
-      Loggers.error('Error updating sender chat thread: $e');
-    }
-
-    // For Receiver side
-    bool isSenderUserExist = (await documentReceiver.get()).exists;
-    // Loggers.success('SENDER USER isExist: $isSenderUserExist');
-
-    if (isSenderUserExist) {
-      documentReceiver.update({
-        FirebaseConst.msgCount: FieldValue.increment(1),
-        FirebaseConst.lastMsg: receiverLastMessage,
-        FirebaseConst.isDeleted: false,
-        FirebaseConst.id: time.toString()
-      });
+    ChatThread receiverConversation;
+    if (receiverSnapshot.exists && receiverSnapshot.data() is Map<String, dynamic>) {
+      receiverConversation = ChatThread.fromJson(
+          Map<String, dynamic>.from(receiverSnapshot.data() as Map<String, dynamic>));
+      receiverConversation.id = time.toString();
+      receiverConversation.lastMsg = receiverLastMessage;
+      receiverConversation.msgCount = (receiverConversation.msgCount ?? 0) + 1;
+      receiverConversation.isDeleted = false;
+      receiverConversation.userId ??= myUser?.id;
+      receiverConversation.conversationId ??= conversationUser.value.conversationId;
     } else {
       ChatType status = ChatType.approved;
       String? requestType = UserRequestAction.accept.title;
@@ -314,7 +297,8 @@ class ChatScreenController extends BlockUserController
                 ? UserRequestAction.accept.title
                 : null;
       }
-      ChatThread myConversation = ChatThread(
+
+      receiverConversation = ChatThread(
           id: time.toString(),
           conversationId: conversationUser.value.conversationId,
           chatType: status,
@@ -326,47 +310,76 @@ class ChatScreenController extends BlockUserController
           iBlocked: false,
           iAmBlocked: false,
           requestType: requestType);
-      myConversationUser = myConversation;
-      documentReceiver.set(myConversation.toJson());
     }
 
-    pushNotificationToUser(message);
+    final batch = db.batch();
+    batch.set(chatCollection.doc(time.toString()), message.toJson());
+    batch.set(documentSender, senderConversation.toJson(), SetOptions(merge: true));
+    batch.set(documentReceiver, receiverConversation.toJson(), SetOptions(merge: true));
+
+    try {
+      await batch.commit();
+      conversationUser.value = senderConversation;
+      myConversationUser = receiverConversation;
+      Loggers.success('Chat message and threads committed successfully.');
+      await pushNotificationToUser(message, receiverConversation);
+    } catch (e) {
+      Loggers.error('Error committing chat message: $e');
+      rethrow;
+    }
   }
 
-  void pushNotificationToUser(MessageData message) {
+  Future<void> pushNotificationToUser(
+      MessageData message, ChatThread notificationThread) async {
+    if (otherUser == null) {
+      await _fetchOtherUser();
+    }
     if (otherUser?.notifyChat == 0) return;
+    if ((otherUser?.deviceToken ?? '').isEmpty) {
+      Loggers.warning('Skipping chat notification because recipient device token is empty.');
+      return;
+    }
 
     String bodyMessage = '';
     switch (message.messageType) {
       case MessageType.image:
         bodyMessage =
             'Shared a Photo${(message.textMessage ?? '').isNotEmpty ? ': ${message.textMessage}' : ""}';
+        break;
       case MessageType.video:
         bodyMessage =
             'Shared a Video${(message.textMessage ?? '').isNotEmpty ? ': ${message.textMessage}' : ""}';
+        break;
       case MessageType.post:
         bodyMessage = 'Shared a Post';
+        break;
       case MessageType.audio:
-        bodyMessage = '🎙️ Sent a voice message';
+        bodyMessage = 'Sent a voice message';
+        break;
       case MessageType.text:
         bodyMessage = message.textMessage ?? '';
+        break;
       case MessageType.gift:
         bodyMessage = 'Sent a Gift';
+        break;
       case MessageType.gif:
         bodyMessage = 'Sent a GIF';
+        break;
       case MessageType.storyReply:
         bodyMessage = 'Sent a Story Reply';
+        break;
       case null:
         bodyMessage = '';
+        break;
     }
 
-    NotificationService.instance.pushNotification(
+    await NotificationService.instance.pushNotification(
         title: myUser?.fullname ?? '',
         body: bodyMessage,
         token: otherUser?.deviceToken,
         deviceType: otherUser?.device,
         type: NotificationType.chat,
-        data: myConversationUser?.toJson());
+        data: notificationThread.toJson());
   }
 
   String getLastMessage(MessageType type, MessageData message,

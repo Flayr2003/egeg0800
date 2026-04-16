@@ -130,6 +130,7 @@ class UserService {
       String? countryCode,
       String? country,
       String? appLanguage,
+      String? deviceToken,
       bool? showMyFollowing,
       bool? receiveMessage,
       bool? notifyPostLike,
@@ -180,6 +181,7 @@ class UserService {
           if (savedMusicIds != null)
             Params.savedMusicIds: savedMusicIds.join(','),
           if (appLanguage != null) Params.appLanguage: appLanguage,
+          if (deviceToken != null) Params.deviceToken: deviceToken,
           if (lat != null) Params.lat: lat,
           if (lon != null) Params.lon: lon,
           if (appLastUsed != null) Params.appLastUsedAt: appLastUsed,
