@@ -66,7 +66,10 @@ Future<void> main() async {
     // Sync user but don't let it block app startup indefinitely
     FirebaseUserSyncService.syncCurrentSessionUserFromFirebase().timeout(
       const Duration(seconds: 5),
-      onTimeout: () => Loggers.warning("User sync timed out"),
+      onTimeout: () {
+        Loggers.warning("User sync timed out");
+        return null;
+      },
     );
 
     try {
