@@ -14,11 +14,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # ─── 1. Checkout ────────────────────────────────────────────────
+      # 1. Checkout
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ─── 2. Java ────────────────────────────────────────────────────
+      # 2. Java
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
@@ -26,14 +26,14 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      # ─── 3. Flutter ─────────────────────────────────────────────────
+      # 3. Flutter
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
-      # ─── 4. Accept Android SDK Licenses & Install NDK ───────────────
+      # 4. Accept Android SDK licenses and install NDK
       - name: Accept Android SDK Licenses & Install NDK
         run: |
           ANDROID_SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
@@ -41,54 +41,65 @@ jobs:
           yes | "$SDKMANAGER" --licenses || true
           "$SDKMANAGER" "ndk;29.0.14033849" || true
 
-      # ─── 5. Restore google-services.json from Secret ────────────────
-      - name: Restore google-services.json
+      # 5. google-services.json: use secret if provided, otherwise keep committed file
+      - name: Restore google-services.json (if secret exists)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
-          echo "google-services.json restored ✓"
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+            echo "google-services.json restored from secret"
+          else
+            echo "Using committed android/app/google-services.json"
+          fi
           ls -l android/app/google-services.json
-          cat android/app/google-services.json | head -c 50
 
-      # ─── 6. Restore Keystore & key.properties ───────────────────────
-      - name: Restore Keystore
+      # 6. Keystore: use secrets if provided, otherwise use committed upload-keystore.jks
+      - name: Prepare signing config
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/flayr_release.jks
-          cat > android/key.properties << EOF
-          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
-          keyPassword=${{ secrets.KEY_PASSWORD }}
-          keyAlias=${{ secrets.KEY_ALIAS }}
-          storeFile=flayr_release.jks
-          EOF
-          echo "Keystore restored ✓"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/flayr_release.jks
+            {
+              echo "storePassword=$KEYSTORE_PASSWORD"
+              echo "keyPassword=$KEY_PASSWORD"
+              echo "keyAlias=$KEY_ALIAS"
+              echo "storeFile=flayr_release.jks"
+            } > android/key.properties
+            echo "Release keystore restored from secrets"
+          else
+            echo "Using committed upload-keystore.jks + key.properties"
+          fi
 
-      # ─── 7. Git config for GitLab dependencies ──────────────────────
+      # 7. Git config for GitLab dependencies
       - name: Configure Git for GitLab dependencies
         run: |
           git config --global url."https://gitlab.com/".insteadOf "git@gitlab.com:"
           git config --global url."https://".insteadOf "git://"
 
-      # ─── 8. Get Flutter dependencies ────────────────────────────────
+      # 8. Dependencies
       - name: Get dependencies
         run: flutter pub get
         timeout-minutes: 10
 
-      # ─── 9. Build Signed Release APK ────────────────────────────────
+      # 9. Build signed release APK
       - name: Build Signed Release APK
         run: flutter build apk --release --no-tree-shake-icons
 
-      # ─── 10. Extract SHA-1 from APK ─────────────────────────────────
+      # 10. Extract SHA-1 from APK for Firebase Console
       - name: Extract SHA-1 from APK
         run: |
           echo "### 🔐 SHA-1 Certificate Fingerprint" >> $GITHUB_STEP_SUMMARY
-          echo "```" >> $GITHUB_STEP_SUMMARY
-          echo "SHA1_START"
-          keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk | grep "SHA1:"
-          echo "SHA1_END"
+          echo '```' >> $GITHUB_STEP_SUMMARY
           keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk | grep "SHA1:" >> $GITHUB_STEP_SUMMARY || echo "Could not extract SHA1" >> $GITHUB_STEP_SUMMARY
-          echo "```" >> $GITHUB_STEP_SUMMARY
-          echo "Copy the SHA-1 above and add it to your Firebase Console to fix Google Sign-in." >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "Add this SHA-1 to Firebase Console → Project Settings → Your apps → Android → Add fingerprint, then re-download google-services.json and update GitHub secret GOOGLE_SERVICES_JSON." >> $GITHUB_STEP_SUMMARY
 
-      # ─── 11. Prepare release info ───────────────────────────────────
+      # 11. Release metadata
       - name: Prepare release info
         id: version
         run: |
@@ -107,16 +118,7 @@ jobs:
 
           cp build/app/outputs/flutter-apk/app-release.apk "${FILENAME}"
 
-          echo "### ✅ Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Key | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Version** | $VERSION |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Build** | #$BUILD_NUM |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Commit** | $SHORT_SHA |" >> $GITHUB_STEP_SUMMARY
-          echo "| **APK Size** | $APK_SIZE |" >> $GITHUB_STEP_SUMMARY
-
-      # ─── 12. Upload APK as Artifact ─────────────────────────────────
+      # 12. Upload APK artifact
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -124,7 +126,7 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 90
 
-      # ─── 13. Create GitHub Release ──────────────────────────────────
+      # 13. Create GitHub Release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -145,8 +147,8 @@ jobs:
 
             ### ⬇️ Download & Install
             1. Download **`${{ steps.version.outputs.filename }}`** below.
-            2. On your Android device, go to **Settings → Security → Install unknown apps** and allow your browser or file manager.
-            3. Open the downloaded APK and tap **Install**.
+            2. On your Android device: Settings → Security → Install unknown apps → allow your browser / file manager.
+            3. Open the downloaded APK and tap Install.
           files: ${{ steps.version.outputs.filename }}
           draft: false
           prerelease: false

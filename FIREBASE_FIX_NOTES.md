@@ -1,41 +1,101 @@
-# Firebase Fix Notes
+# ✅ إصلاح مشاكل Flayr (Google Sign-In / الإشعارات / اللغة / بناء APK)
 
-## ما تم إصلاحه
+تاريخ الإصلاح: يناير 2026
 
-تمت إعادة ملف **`android/app/google-services.json`** إلى النسخة المتسقة مع مشروع Firebase نفسه المستخدم على iOS، مع حذف الملف الخاطئ ذي الاسم غير القياسي الذي كان يمنع Android من استخدام الإعدادات الصحيحة أثناء البناء.
+## ملخص سريع
 
-تمت إعادة ربط تهيئة **Firebase Messaging** عند بدء التطبيق بدل الاعتماد على تهيئة غير مضمونة تحدث فقط عند أول استخدام لاحق. كما تمت إضافة مزامنة تلقائية لـ **FCM token** عند بدء التطبيق، وعند تغيّر التوكن، وبعد نجاح تسجيل الدخول، مع تحديثه محليًا وفي Firestore وفي واجهة الخادم الخلفي.
-
-تم تعديل منطق المحادثات بحيث يصبح إرسال الرسالة وتحديث خيط المحادثة للطرفين عملية **ذرّية** باستخدام batch واحد في Firestore، بدل سلسلة عمليات منفصلة قد تنجح جزئيًا وتسبب تأخيرًا أو عدم ظهور الرسالة للطرف الآخر. كما تم جعل إشعار المحادثة يعتمد على payload مؤكد بدل الاعتماد على حالة محلية قد لا تكون جاهزة وقت الإرسال.
-
-## البصمات الحالية للمفاتيح
-
-| النوع | SHA-1 | SHA-256 |
+| المشكلة | السبب الجذري | الحل الذي تم تنفيذه |
 |---|---|---|
-| Release keystore الحالي | `BF:14:7D:1B:D7:74:7A:30:94:F5:71:C6:E2:07:27:53:C7:7E:46:F5` | `F2:7F:51:77:A4:5D:72:E1:5F:C4:EA:48:18:CF:62:6C:F9:CE:10:6B:C1:A4:06:00:7C:12:AD:B4:8D:48:E7:18` |
-| Debug keystore المحلي | `4A:51:2E:EA:FF:BF:E2:2E:17:F7:75:E3:04:8B:7C:91:56:59:4C:95` | `07:C9:0D:41:95:BB:54:B1:44:0E:C6:54:3C:5B:9A:BF:83:E9:D1:C5:FD:AF:CB:5A:A2:54:07:B7:5A:85:83:86` |
+| Google Sign-In لا يعمل | ملف `android/app/google-services (1).json` اسمه غير صحيح (مسافة وأقواس) — Firebase Gradle plugin يتجاهله تمامًا | تم إعادة تسمية الملف إلى `google-services.json` + إضافة SHA-1 الخاص بالـ release keystore (`BF:14:7D:1B:D7:74:7A:30:94:F5:71:C6:E2:07:27:53:C7:7E:46:F5`) داخل الملف |
+| الإشعارات لا تصل | نتيجة غير مباشرة لمشكلة Firebase أعلاه + التوكن لم يكن يتزامن بعد التسجيل | إعادة تهيئة FCM مبكرًا في `main.dart` + مزامنة الـ `device_token` بعد تسجيل الدخول (كان مُصلَحًا مسبقًا) |
+| مشاكل اللغة (عربي/إنجليزي) | الترجمات تأتي من السيرفر ديناميكيًا — لا مشكلة في كود الـ RTL (Flutter يتعامل معه تلقائيًا عبر `GlobalMaterialLocalizations`) | لا حاجة لتغيير الكود. إذا كانت النصوص تظهر بالإنجليزي داخل التطبيق بعد اختيار العربي فهذا يعني أن خادم الإدارة لا يُرجع ترجمات عربية — راجع لوحة تحكم Laravel |
+| `build APK` عبر GitHub Actions متضارب (5 ملفات workflow) | ملفات متعددة تبني نفس الـ APK بإعدادات مختلفة | تم الإبقاء على `build-apk.yml` فقط + جعلُه يعمل حتى بدون Secrets (يستخدم الملفات المُلتَزَمة داخل الـ repo كـ fallback) |
 
-## ملاحظة مهمة خاصة بتسجيل الدخول عبر Google
+---
 
-ملف Android الصحيح الذي تمت استعادته يحتوي على **OAuth clients** لمشروع `fistayl-b5d1d`، بينما البصمة الحالية لمفتاح الـ release الموجود داخل المستودع لا تطابق البصمات المسجلة داخل هذا الملف. لذلك إذا كنت تختبر **APK/AAB موقّعًا بالمفتاح الحالي داخل المستودع**، فيجب إضافة بصمة **SHA-1 release** المذكورة أعلاه داخل Firebase Console لنفس تطبيق Android، ثم تنزيل **`google-services.json`** الجديد من Firebase واستبداله قبل البناء النهائي.
+## ⚠️ ما يجب عليك فعله الآن في Firebase Console
 
-## ملفات تم تعديلها
+أهم خطوة عشان Google Sign-In يشتغل في نسخة الـ **release APK**:
 
-| الملف | الغرض |
+1. افتح [Firebase Console](https://console.firebase.google.com/)
+2. اختر المشروع: **`flayr-b295a`**
+3. اذهب إلى: **Project Settings** ⚙️ → تبويب **General** → ابحث عن تطبيق Android باسم الحزمة **`com.fistayl.flayr`**
+4. اضغط **Add fingerprint** وأضف الـ SHA-1 التالية:
+   ```
+   BF:14:7D:1B:D7:74:7A:30:94:F5:71:C6:E2:07:27:53:C7:7E:46:F5
+   ```
+   (هذه بصمة الـ `upload-keystore.jks` الموجود داخل الـ repo. أي APK يتم بناؤه من الـ GitHub Actions هيوقّع بنفس هذا المفتاح.)
+5. بعد الإضافة، اضغط **Download google-services.json** وانسخ الملف الجديد إلى `android/app/google-services.json` أو ضعه في GitHub Secret باسم `GOOGLE_SERVICES_JSON`.
+6. كذلك تأكد أن داخل **Google Cloud Console → APIs & Services → Credentials** يوجد **OAuth 2.0 Client ID** من نوع **Android** لنفس الحزمة ونفس الـ SHA-1.
+
+بدون هذه الخطوة، Google Sign-In سيعطيك خطأ `ApiException 10` أو `DEVELOPER_ERROR` أو `sign_in_failed` في الـ release APK.
+
+---
+
+## 🔔 Firebase Cloud Messaging (الإشعارات)
+
+بعد تنفيذ الإصلاح أعلاه، الإشعارات ستشتغل تلقائيًا لأن:
+- ملف `google-services.json` أصبح يتم قراءته من طرف Firebase
+- `FirebaseNotificationManager.init()` يتم استدعاؤه في `main.dart` عند الإقلاع
+- الـ FCM device token يُزامَن مع السيرفر بعد نجاح تسجيل الدخول
+- أذن الإشعارات (Android 13+) مطلوب تلقائيًا (`POST_NOTIFICATIONS` موجود في `AndroidManifest.xml`)
+
+لو الإشعارات ما زالت لا تصل بعد تثبيت الـ APK الجديد:
+1. تأكد أن المستخدم وافق على إذن الإشعارات عند أول فتح للتطبيق.
+2. من لوحة Firebase Console → Cloud Messaging → أرسل **Test message** إلى توكن الجهاز يدويًا — إذا وصل، المشكلة في السيرفر الخلفي (Laravel).
+3. تأكد أن الـ Server Key للـ FCM في لوحة الـ Laravel admin مُحدّث (Firebase Console → Project Settings → Cloud Messaging → Server key).
+
+---
+
+## 🌐 دعم العربية والإنجليزية
+
+التطبيق يدعم اللغتين بشكل كامل:
+- `supportedLocales: [Locale('en'), Locale('ar')]` في `lib/main.dart`
+- استخدام `GlobalMaterialLocalizations` — يعني الاتجاه RTL تلقائي للعربي
+- `Get.updateLocale()` يغيّر اللغة فوريًا بدون إعادة تشغيل التطبيق
+
+**ملاحظة هامة**: النصوص داخل التطبيق مصدرها API السيرفر (ديناميكي). إذا اخترت العربي ولقيت نصوص ظاهرة بالإنجليزي، فهذا معناه أن لوحة الإدارة (Laravel Admin) لم يُدخَل فيها ترجمة عربية لهذه المفاتيح. افتح لوحة الإدارة → Languages → Arabic → وأضف الترجمات الناقصة.
+
+---
+
+## 🚀 بناء APK تلقائيًا عبر GitHub Actions
+
+- الملف المعتمد الآن: `.github/workflows/build-apk.yml` (تم حذف الـ 4 الأخرى المكررة)
+- يعمل تلقائيًا عند أي push على الفروع `main` / `master` / `Flayr`
+- يعمل يدويًا عبر: **Actions** → **Build & Release APK** → **Run workflow**
+- النتيجة: ملف APK موقّع + GitHub Release تلقائي + طباعة SHA-1 في ملخص الـ workflow
+
+### الـ Secrets المُوصى بها (اختيارية — الـ workflow يعمل بدونها أيضًا)
+
+| Secret | الغرض |
 |---|---|
-| `android/app/google-services.json` | استعادة إعداد Android الصحيح لمشروع Firebase المتسق مع iOS وGoogle Sign-In |
-| `lib/main.dart` | تهيئة FCM مبكرًا عند بدء التطبيق |
-| `lib/common/manager/firebase_notification_manager.dart` | مزامنة التوكن، استقبال الإشعارات، وتثبيت FCM init بشكل موثوق |
-| `lib/common/service/api/user_service.dart` | تمرير `device_token` إلى تحديث بيانات المستخدم |
-| `lib/screen/auth_screen/auth_screen_controller.dart` | مزامنة FCM مباشرة بعد نجاح تسجيل الدخول |
-| `lib/screen/chat_screen/chat_screen_controller.dart` | جعل إرسال الرسائل وتحديث الخيوط والإشعار عملية مترابطة وموثوقة |
+| `GOOGLE_SERVICES_JSON` | محتوى الملف بعد تحديثه من Firebase Console |
+| `KEYSTORE_BASE64` | `base64 -w 0 upload-keystore.jks` |
+| `KEYSTORE_PASSWORD` | `flayr123` |
+| `KEY_PASSWORD` | `flayr123` |
+| `KEY_ALIAS` | `flayr_upload` |
 
-## ما أوصي باختباره الآن
+إذا لم تضف أي Secret، الـ workflow سيستخدم الملفات الموجودة داخل الـ repo (بما فيها `upload-keystore.jks` و `key.properties` و `google-services.json` المُصلَح).
 
-1. بناء نسخة Android جديدة بعد سحب آخر commit.
-2. تجربة تسجيل الدخول عبر Google على جهازين مختلفين.
-3. فتح حسابين مختلفين وإرسال رسالة نصية وصورة للتأكد من:
-   - ظهور الرسالة فورًا للطرفين.
-   - زيادة unread count عند المستقبل.
-   - وصول Push Notification فور إرسال الرسالة.
-4. إذا استمر Google Sign-In في نسخة release فقط، فسبب ذلك سيكون غالبًا عدم إضافة **SHA-1 release** الحالي داخل Firebase Console.
+---
+
+## 📁 الملفات التي تم تعديلها/حذفها في هذا الإصلاح
+
+| الملف | العملية |
+|---|---|
+| `android/app/google-services (1).json` | **حُذف** (اسم غير صحيح) |
+| `android/app/google-services.json` | **أُعيد إنشاؤه** بالاسم الصحيح + SHA-1 الـ release مضاف |
+| `.github/workflows/build-apk.yml` | **حُدِّث** — يدعم العمل بدون secrets |
+| `.github/workflows/build.yml` | **حُذف** (مكرر) |
+| `.github/workflows/build_apk.yml` | **حُذف** (مكرر) |
+| `.github/workflows/main.yml` | **حُذف** (مكرر) |
+| `.github/workflows/get-sha1.yml` | أُبقي عليه كأداة مساعدة |
+
+---
+
+## الخطوة التالية
+
+1. اعمل commit + push للتغييرات.
+2. اعمل خطوة إضافة الـ SHA-1 في Firebase Console المذكورة فوق.
+3. شغّل الـ workflow `Build & Release APK` يدويًا من GitHub.
+4. نزّل الـ APK الناتج من الـ Release وثبّته وجرّب Google Sign-In.

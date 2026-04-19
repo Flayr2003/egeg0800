@@ -20,6 +20,14 @@
             "package_name": "com.fistayl.flayr",
             "certificate_hash": "a6f9e985468457b16efbf6b4ac5ca05b2a280d35"
           }
+        },
+        {
+          "client_id": "15144235989-rprf7bj1kehcd6o6id08qfmmmpks5nf8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fistayl.flayr",
+            "certificate_hash": "bf147d1bd7747a3094f571c6e2072753c77e46f5"
+          }
         }
       ],
       "api_key": [
