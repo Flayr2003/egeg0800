@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:csv/csv.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:flayr/common/controller/base_controller.dart';
@@ -21,25 +22,39 @@ import 'package:flayr/screen/on_boarding_screen/on_boarding_screen.dart';
 import 'package:flayr/screen/select_language_screen/select_language_screen.dart';
 
 class SplashScreenController extends BaseController {
-  StreamSubscription? _subscription;
+  StreamSubscription<bool>? _subscription;
   bool isOnline = true;
   bool _navigated = false;
 
-  // HARD SAFETY NET: no matter what happens, we will navigate away from splash
-  // within this time window. Prevents the app from being stuck on splash forever.
-  static const Duration _hardMaxSplashTime = Duration(seconds: 35);
+  // DIAGNOSTIC: Show on UI so user can see where app is stuck
+  final RxString debugStatus = 'Starting...'.obs;
+  final RxInt secondsElapsed = 0.obs;
+
+  // HARD SAFETY NET: 20 seconds max on splash
+  static const Duration _hardMaxSplashTime = Duration(seconds: 20);
 
   @override
   void onReady() {
     super.onReady();
+    _updateStatus('onReady() fired');
 
-    // Start the main flow
+    // Tick counter so user knows app is alive
+    Timer.periodic(const Duration(seconds: 1), (t) {
+      if (_navigated) {
+        t.cancel();
+        return;
+      }
+      secondsElapsed.value++;
+    });
+
+    // Start main flow
     fetchSettings();
 
-    // Watchdog: force-navigate after hard timeout if flow hasn't completed
+    // Watchdog: force-navigate after hard timeout
     Future.delayed(_hardMaxSplashTime, () {
       if (!_navigated) {
-        Loggers.warning('Splash watchdog fired - forcing navigation');
+        _updateStatus('Watchdog fired - forcing navigation');
+        Loggers.warning('Splash watchdog fired');
         _navigateToNext();
       }
     });
@@ -52,7 +67,6 @@ class SplashScreenController extends BaseController {
             Get.back();
           }
         } else {
-          // Don't show no-internet sheet while still on splash
           if (_navigated) {
             Get.to(() => const NoInternetSheet(),
                 transition: Transition.downToUp);
@@ -70,14 +84,25 @@ class SplashScreenController extends BaseController {
     _subscription?.cancel();
   }
 
+  void _updateStatus(String msg) {
+    debugStatus.value = msg;
+    Loggers.info('[SPLASH] $msg');
+  }
+
   Future<void> fetchSettings() async {
-    // Minimum splash time for branding
+    _updateStatus('Waiting 2s branding...');
     await Future.delayed(const Duration(milliseconds: 2000));
 
+    _updateStatus('Calling fetchGlobalSettings...');
     try {
       bool success = await CommonService.instance
           .fetchGlobalSettings()
-          .timeout(const Duration(seconds: 10), onTimeout: () => false);
+          .timeout(const Duration(seconds: 8), onTimeout: () {
+        _updateStatus('fetchGlobalSettings TIMEOUT');
+        return false;
+      });
+
+      _updateStatus('Settings success=$success');
 
       if (success) {
         final translations = Get.find<DynamicTranslations>();
@@ -88,13 +113,19 @@ class SplashScreenController extends BaseController {
             languages.where((element) => element.status == 1).toList();
 
         if (downloadLanguages.isNotEmpty) {
+          _updateStatus('Downloading ${downloadLanguages.length} languages...');
           try {
             var downloadedFiles = await downloadAndParseLanguages(downloadLanguages)
-                .timeout(const Duration(seconds: 10), onTimeout: () => {});
+                .timeout(const Duration(seconds: 5), onTimeout: () {
+              _updateStatus('Language download TIMEOUT');
+              return {};
+            });
             if (downloadedFiles.isNotEmpty) {
               translations.addTranslations(downloadedFiles);
             }
+            _updateStatus('Languages loaded: ${downloadedFiles.keys.join(",")}');
           } catch (e) {
+            _updateStatus('Language error: $e');
             Loggers.error('Language download failed: $e');
           }
         }
@@ -106,9 +137,11 @@ class SplashScreenController extends BaseController {
         }
       }
     } catch (e) {
+      _updateStatus('Settings error: ${e.toString().substring(0, 50)}');
       Loggers.error('Settings fetch error: $e');
     }
 
+    _updateStatus('Navigating to next screen...');
     _navigateToNext();
   }
 
@@ -120,10 +153,10 @@ class SplashScreenController extends BaseController {
       var setting = SessionManager.instance.getSettings();
 
       if (SessionManager.instance.isLogin()) {
-        // User-details fetch with timeout so we never hang here either
+        _updateStatus('User logged in, fetching details...');
         UserService.instance
             .fetchUserDetails(userId: SessionManager.instance.getUserID())
-            .timeout(const Duration(seconds: 10), onTimeout: () => null)
+            .timeout(const Duration(seconds: 8), onTimeout: () => null)
             .then((value) async {
           try {
             if (value != null) {
@@ -150,6 +183,8 @@ class SplashScreenController extends BaseController {
         bool onBoardingShow = SessionManager.instance
             .getBool(SessionKeys.isOnBoardingScreenSelect);
 
+        _updateStatus('langSelect=$isLanguageSelect onBoard=$onBoardingShow');
+
         if (isLanguageSelect == false) {
           Get.off(() => const SelectLanguageScreen(
               languageNavigationType: LanguageNavigationType.fromStart));
@@ -161,8 +196,8 @@ class SplashScreenController extends BaseController {
         }
       }
     } catch (e, st) {
+      _updateStatus('Nav fatal: $e');
       Loggers.error('_navigateToNext fatal: $e\n$st');
-      // Last resort: force login screen
       try {
         Get.off(() => const LoginScreen());
       } catch (_) {}
@@ -189,7 +224,7 @@ class SplashScreenController extends BaseController {
     try {
       final response = await http
           .get(Uri.parse(language.csvFile?.addBaseURL() ?? ''))
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 3));
       if (response.statusCode == 200) {
         final csvContent = utf8.decode(response.bodyBytes);
         final parsedMap = _parseCsvToMap(csvContent);

@@ -10,31 +10,27 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Get.put(SplashScreenController());
+    final controller = Get.put(SplashScreenController());
     return Scaffold(
       backgroundColor: const Color(0xFF000000),
       body: Stack(
         children: [
-          // Pure black background
           Container(
             height: double.infinity,
             width: double.infinity,
             color: const Color(0xFF000000),
           ),
-          // Big logo centered
           Align(
             alignment: Alignment.center,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // App icon - bigger, no white background
                 Image.asset(
                   'assets/icons/app_icon.png',
                   width: 160,
                   height: 160,
                 ),
                 const SizedBox(height: 24),
-                // App name with shimmer
                 CustomShimmerFillText(
                   text: AppRes.appName.toUpperCase(),
                   baseColor: Colors.white,
@@ -43,10 +39,38 @@ class SplashScreen extends StatelessWidget {
                   finalColor: Colors.white,
                   shimmerColor: const Color(0xFF3E8BFF),
                 ),
+                const SizedBox(height: 40),
+                // DIAGNOSTIC overlay - shows exactly where app is stuck
+                Obx(() => Column(
+                      children: [
+                        Text(
+                          '${controller.secondsElapsed.value}s',
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            controller.debugStatus.value,
+                            textAlign: TextAlign.center,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color:
+                                  Colors.white.withValues(alpha: 0.7),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )),
               ],
             ),
           ),
-          // Developer credit at the bottom
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
