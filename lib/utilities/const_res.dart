@@ -1,4 +1,4 @@
-فخconst String baseURL = 'https://fistayl.com/';
+const String baseURL = 'https://fistayl.com/';
 const String apiURL = '${baseURL}api/';
 const String apiKey = 'retry123';
 
