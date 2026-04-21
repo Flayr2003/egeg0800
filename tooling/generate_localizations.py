@@ -65,7 +65,11 @@ def dart_escape(value: str) -> str:
 def write_dart_file(keys, ar_map):
     en_lines = []
     ar_lines = []
+    seen_keys = set()
     for _, value in keys:
+        if value in seen_keys:
+            continue
+        seen_keys.add(value)
         escaped_key = dart_escape(value)
         escaped_ar = dart_escape(ar_map[value])
         en_lines.append(f"    '{escaped_key}': '{escaped_key}',")
