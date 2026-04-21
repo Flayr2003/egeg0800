@@ -12,7 +12,16 @@
           "package_name": "com.fistayl.flayr"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "15144235989-pak81glhsedli9ftqrj9576o5uheu264.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fistayl.flayr",
+            "certificate_hash": "c3bd80aa45bafece6a1ba945fa349fa8df8b5427"
+          }
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAJVkvmBpY8ZH13gqLIgUkthz7KI0v8li8"
